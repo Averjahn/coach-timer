@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Секундомеры тренера</title>
+<style>
+  :root{
+    --bg:#0f1420;
+    --panel:#171f30;
+    --panel-2:#1e2740;
+    --border:#2a3550;
+    --text:#eef2ff;
+    --muted:#8b96b8;
+    --green:#22c55e;
+    --green-d:#16a34a;
+    --red:#ef4444;
+    --red-d:#dc2626;
+    --blue:#3b82f6;
+    --blue-d:#2563eb;
+    --amber:#f59e0b;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    -webkit-user-select:none;
+    user-select:none;
+    overscroll-behavior:none;
+  }
+  header{
+    position:sticky;top:0;z-index:20;
+    background:rgba(15,20,32,0.96);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px;}
+  h1 span{color:var(--muted);font-weight:500;font-size:14px;display:block;margin-top:2px;}
+  .header-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  button{
+    font-family:inherit;
+    border:none;
+    cursor:pointer;
+    border-radius:12px;
+    font-weight:600;
+    transition:transform .06s ease, filter .1s ease, opacity .1s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button:active{transform:scale(0.96);}
+  .btn{
+    padding:11px 18px;
+    font-size:15px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  .btn:hover{filter:brightness(1.15);}
+  .btn.primary{background:var(--blue);border-color:var(--blue);}
+  .btn.primary:hover{background:var(--blue-d);}
+
+  .tabs{display:flex;gap:6px;padding:10px 20px 0;}
+  .tab{
+    padding:9px 16px;font-size:14px;border-radius:10px 10px 0 0;
+    background:transparent;color:var(--muted);border:1px solid transparent;
+  }
+  .tab.active{background:var(--panel);color:var(--text);border:1px solid var(--border);border-bottom-color:var(--panel);}
+
+  main{padding:18px 20px 40px;max-width:1400px;margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .empty{
+    text-align:center;padding:60px 20px;color:var(--muted);
+  }
+  .empty .big{font-size:44px;margin-bottom:10px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+    gap:16px;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    position:relative;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .card.running{
+    border-color:var(--green);
+    box-shadow:0 0 0 3px rgba(34,197,94,0.12);
+  }
+  .card-top{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
+  }
+  .name-wrap{display:flex;align-items:center;gap:8px;min-width:0;flex:1;}
+  .card-name{
+    font-size:19px;font-weight:700;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .status-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+  .card.running .status-dot{background:var(--green);box-shadow:0 0 8px var(--green);}
+  .icon-btn{
+    background:transparent;color:var(--muted);
+    width:32px;height:32px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex-shrink:0;
+  }
+  .icon-btn:hover{background:var(--panel-2);color:var(--text);}
+
+  .timer-display{
+    font-variant-numeric:tabular-nums;
+    font-feature-settings:"tnum";
+    font-size:clamp(38px,7vw,52px);
+    font-weight:800;
+    text-align:center;
+    padding:10px 0 4px;
+    letter-spacing:1px;
+    font-family:'SF Mono','Roboto Mono',ui-monospace,monospace;
+  }
+  .card.running .timer-display{color:var(--green);}
+
+  .last-lap-badge{
+    text-align:center;font-size:13px;color:var(--muted);min-height:18px;
+  }
+  .last-lap-badge b{color:var(--amber);}
+
+  .laps-list{
+    max-height:100px;overflow-y:auto;
+    display:flex;flex-direction:column;gap:4px;
+    font-size:13px;font-family:ui-monospace,monospace;
+    padding-right:2px;
+  }
+  .laps-list div{
+    display:flex;justify-content:space-between;
+    background:var(--panel-2);padding:5px 9px;border-radius:7px;color:var(--muted);
+  }
+  .laps-list div b{color:var(--text);font-weight:600;}
+  .laps-list::-webkit-scrollbar{width:5px;}
+  .laps-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  .card-buttons{display:flex;gap:8px;margin-top:4px;}
+  .card-buttons button{flex:1;padding:16px 8px;font-size:16px;}
+  .btn-start{background:var(--green);color:#04170a;}
+  .btn-start:hover{background:var(--green-d);}
+  .btn-lap{background:var(--blue);color:#fff;}
+  .btn-lap:hover{background:var(--blue-d);}
+  .btn-stop{background:var(--red);color:#fff;}
+  .btn-stop:hover{background:var(--red-d);}
+  .btn-reset{background:var(--panel-2);color:var(--muted);flex:0 0 auto;padding:16px 14px;}
+
+  /* Add athlete panel */
+  .add-panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;margin-bottom:18px;
+  }
+  .add-panel textarea{
+    width:100%;min-height:70px;background:var(--panel-2);color:var(--text);
+    border:1px solid var(--border);border-radius:10px;padding:10px 12px;
+    font-family:inherit;font-size:15px;resize:vertical;
+  }
+  .add-panel-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px;flex-wrap:wrap;}
+  .hint{font-size:12px;color:var(--muted);}
+
+  /* History */
+  .history-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+  .history-group{margin-bottom:22px;}
+  .history-group h3{
+    font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;
+    margin:0 0 8px;font-weight:700;
+  }
+  table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+  th,td{padding:11px 14px;text-align:left;font-size:14px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;}
+  tr:last-child td{border-bottom:none;}
+  td.time{font-family:ui-monospace,monospace;font-weight:700;font-size:16px;}
+  td.laps-cell{color:var(--muted);font-size:12px;font-family:ui-monospace,monospace;}
+  .del-row{background:transparent;color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:14px;}
+  .del-row:hover{background:rgba(239,68,68,0.15);color:var(--red);}
+
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,0.6);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal{
+    background:var(--panel);border:1px solid var(--border);border-radius:16px;
+    padding:22px;max-width:360px;width:100%;
+  }
+  .modal p{margin:0 0 18px;font-size:15px;color:var(--text);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:12px 20px;border-radius:12px;font-size:14px;z-index:200;
+    opacity:0;transition:opacity .25s ease, transform .25s ease;pointer-events:none;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:600px){
+    .grid{grid-template-columns:1fr 1fr;}
+    header{padding:12px 14px;}
+    main{padding:14px 14px 30px;}
+  }
+  @media (max-width:420px){
+    .grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⏱ Секундомеры <span id="sessionLabel">Тренировка</span></h1>
+  <div class="header-actions">
+    <button class="btn" id="btnShowAdd">+ Спортсмен</button>
+    <button class="btn" id="btnClearRun" title="Сбросить все текущие незаписанные секундомеры">Сбросить все</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-view="timers">Секундомеры</button>
+  <button class="tab" data-view="history">История результатов</button>
+</div>
+
+<main>
+
+  <div class="view active" id="view-timers">
+    <div class="add-panel" id="addPanel" style="display:none;">
+      <textarea id="namesInput" placeholder="Введите фамилии — по одной на строку или через запятую&#10;Например:&#10;Иванов&#10;Петров&#10;Сидорова"></textarea>
+      <div class="add-panel-actions">
+        <span class="hint">Можно вставить сразу целый список</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" id="btnCancelAdd">Отмена</button>
+          <button class="btn primary" id="btnConfirmAdd">Добавить</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="emptyState" class="empty" style="display:none;">
+      <div class="big">🏃</div>
+      <div>Пока нет ни одного спортсмена.<br>Нажмите «+ Спортсмен», чтобы добавить список.</div>
+    </div>
+
+    <div class="grid" id="athleteGrid"></div>
+  </div>
+
+  <div class="view" id="view-history">
+    <div class="history-toolbar">
+      <div class="hint" id="historyCount"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btnExportCsv">Экспорт CSV</button>
+        <button class="btn" id="btnClearHistory">Очистить историю</button>
+      </div>
+    </div>
+    <div id="historyEmpty" class="empty" style="display:none;">
+      <div class="big">📋</div>
+      <div>Результатов пока нет.<br>Останавливайте секундомеры — время будет сохраняться сюда.</div>
+    </div>
+    <div id="historyContainer"></div>
+  </div>
+
+</main>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <p id="modalText"></p>
+    <div class="modal-actions">
+      <button class="btn" id="modalCancel">Отмена</button>
+      <button class="btn" id="modalOk" style="background:var(--red);color:#fff;">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "coach-timer-state-v1";
+
+  /* ---------- state ---------- */
+  var state = loadState();
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var s = JSON.parse(raw);
+        s.athletes = s.athletes || [];
+        s.history = s.history || [];
+        return s;
+      }
+    }catch(e){}
+    return { athletes: [], history: [], nextId: 1 };
+  }
+
+  var saveTimer = null;
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }, 150);
+  }
+
+  function uid(){
+    state.nextId = (state.nextId || 1) + 1;
+    return "a" + state.nextId + "_" + Date.now().toString(36);
+  }
+
+  /* ---------- helpers ---------- */
+  function fmt(ms){
+    if(ms < 0) ms = 0;
+    var totalCs = Math.floor(ms / 10);
+    var cs = totalCs % 100;
+    var totalSec = Math.floor(totalCs / 100);
+    var s = totalSec % 60;
+    var m = Math.floor(totalSec / 60);
+    function pad(n,l){ n=String(n); while(n.length<l) n="0"+n; return n; }
+    if(m > 0){
+      return pad(m,2)+":"+pad(s,2)+"."+pad(cs,2);
+    }
+    return pad(s,2)+"."+pad(cs,2);
+  }
+
+  function elapsedFor(a){
+    var e = a.accumulated || 0;
+    if(a.running && a.startedAt){
+      e += Date.now() - a.startedAt;
+    }
+    return e;
+  }
+
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------- rendering: timers view ---------- */
+  var grid = document.getElementById("athleteGrid");
+  var emptyState = document.getElementById("emptyState");
+
+  function renderGrid(){
+    grid.innerHTML = "";
+    emptyState.style.display = state.athletes.length === 0 ? "block" : "none";
+    state.athletes.forEach(function(a){
+      grid.appendChild(buildCard(a));
+    });
+  }
+
+  function buildCard(a){
+    var card = document.createElement("div");
+    card.className = "card" + (a.running ? " running" : "");
+    card.id = "card-" + a.id;
+
+    var top = document.createElement("div");
+    top.className = "card-top";
+
+    var nameWrap = document.createElement("div");
+    nameWrap.className = "name-wrap";
+    var dot = document.createElement("div");
+    dot.className = "status-dot";
+    var name = document.createElement("div");
+    name.className = "card-name";
+    name.textContent = a.name;
+    nameWrap.appendChild(dot);
+    nameWrap.appendChild(name);
+
+    var delBtn = document.createElement("button");
+    delBtn.className = "icon-btn";
+    delBtn.innerHTML = "&#10005;";
+    delBtn.title = "Удалить спортсмена";
+    delBtn.onclick = function(){ confirmDeleteAthlete(a.id, a.name); };
+
+    top.appendChild(nameWrap);
+    top.appendChild(delBtn);
+    card.appendChild(top);
+
+    var display = document.createElement("div");
+    display.className = "timer-display";
+    display.id = "time-" + a.id;
+    display.textContent = fmt(elapsedFor(a));
+    card.appendChild(display);
+
+    var badge = document.createElement("div");
+    badge.className = "last-lap-badge";
+    badge.id = "badge-" + a.id;
+    badge.innerHTML = a.lastResult ? ("Последний результат: <b>" + fmt(a.lastResult) + "</b>") : "&nbsp;";
+    card.appendChild(badge);
+
+    if(a.laps && a.laps.length){
+      var lapsList = document.createElement("div");
+      lapsList.className = "laps-list";
+      lapsList.id = "laps-" + a.id;
+      a.laps.forEach(function(lp, idx){
+        var row = document.createElement("div");
+        row.innerHTML = "<span>Круг " + (idx+1) + "</span><b>" + fmt(lp) + "</b>";
+        lapsList.appendChild(row);
+      });
+      card.appendChild(lapsList);
+    }
+
+    var btnRow = document.createElement("div");
+    btnRow.className = "card-buttons";
+
+    if(!a.running && elapsedFor(a) === 0){
+      var startBtn = document.createElement("button");
+      startBtn.className = "btn-start";
+      startBtn.textContent = "▶ Старт";
+      startBtn.onclick = function(){ startAthlete(a.id); };
+      btnRow.appendChild(startBtn);
+    } else if(a.running){
+      var lapBtn = document.createElement("button");
+      lapBtn.className = "btn-lap";
+      lapBtn.textContent = "Круг";
+      lapBtn.onclick = function(){ lapAthlete(a.id); };
+      var stopBtn = document.createElement("button");
+      stopBtn.className = "btn-stop";
+      stopBtn.textContent = "■ Стоп";
+      stopBtn.onclick = function(){ stopAthlete(a.id); };
+      btnRow.appendChild(lapBtn);
+      btnRow.appendChild(stopBtn);
+    } else {
+      // paused mid-run with time but not running (shouldn't normally happen, but allow resume/reset)
+      var resumeBtn = document.createElement("button");
+      resumeBtn.className = "btn-start";
+      resumeBtn.textContent = "▶ Продолжить";
+      resumeBtn.onclick = function(){ startAthlete(a.id); };
+      var resetBtn = document.createElement("button");
+      resetBtn.className = "btn-reset";
+      resetBtn.textContent = "Сброс";
+      resetBtn.onclick = function(){ resetAthlete(a.id, false); };
+      btnRow.appendChild(resumeBtn);
+      btnRow.appendChild(resetBtn);
+    }
+
+    card.appendChild(btnRow);
+    return card;
+  }
+
+  /* ---------- actions ---------- */
+  function findAthlete(id){
+    for(var i=0;i<state.athletes.length;i++){
+      if(state.athletes[i].id === id) return state.athletes[i];
+    }
+    return null;
+  }
+
+  function startAthlete(id){
+    var a = findAthlete(id);
+    if(!a) return;
+    a.running = true;
+    a.startedAt = Date.now();
+    a.accumulated = a.accumulated || 0;
+    persist();
+    renderGrid();
+  }
+
+  function lapAthlete(id){
+    var a = findAthlete(id);
+    if(!a || !a.running) return;
+    a.laps = a.laps || [];
+    a.laps.push(elapsedFor(a));
+    persist();
+    renderGrid();
+  }
+
+  function stopAthlete(id){
+    var a = findAthlete(id);
+    if(!a) return;
+    var total = elapsedFor(a);
+    a.running = false;
+    a.startedAt = null;
+    a.accumulated = total;
+    a.lastResult = total;
+
+    state.history.unshift({
+      id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      athleteId: a.id,
+      athleteName: a.name,
+      total: total,
+      laps: (a.laps || []).slice(),
+      date: new Date().toISOString()
+    });
+
+    a.accumulated = 0;
+    a.laps = [];
+
+    persist();
+    renderGrid();
+    renderHistory();
+    toast(a.name + ": записано " + fmt(total));
+  }
+
+  function resetAthlete(id, silent){
+    var a = findAthlete(id);
+    if(!a) return;
+    a.running = false;
+    a.startedAt = null;
+    a.accumulated = 0;
+    a.laps = [];
+    persist();
+    renderGrid();
+    if(!silent) toast(a.name + ": сброшено");
+  }
+
+  function addAthletes(names){
+    var added = 0;
+    names.forEach(function(n){
+      n = n.trim();
+      if(!n) return;
+      state.athletes.push({
+        id: uid(),
+        name: n,
+        running: false,
+        startedAt: null,
+        accumulated: 0,
+        laps: [],
+        lastResult: null
+      });
+      added++;
+    });
+    if(added){
+      persist();
+      renderGrid();
+      toast(added === 1 ? "Спортсмен добавлен" : (added + " спортсменов добавлено"));
+    }
+  }
+
+  function removeAthlete(id){
+    state.athletes = state.athletes.filter(function(a){ return a.id !== id; });
+    persist();
+    renderGrid();
+  }
+
+  /* ---------- ticking ---------- */
+  setInterval(function(){
+    var any = false;
+    state.athletes.forEach(function(a){
+      if(a.running){
+        any = true;
+        var el = document.getElementById("time-" + a.id);
+        if(el) el.textContent = fmt(elapsedFor(a));
+      }
+    });
+  }, 50);
+
+  /* ---------- add panel ---------- */
+  var addPanel = document.getElementById("addPanel");
+  document.getElementById("btnShowAdd").onclick = function(){
+    addPanel.style.display = addPanel.style.display === "none" ? "block" : "none";
+    if(addPanel.style.display === "block") document.getElementById("namesInput").focus();
+  };
+  document.getElementById("btnCancelAdd").onclick = function(){
+    addPanel.style.display = "none";
+    document.getElementById("namesInput").value = "";
+  };
+  document.getElementById("btnConfirmAdd").onclick = function(){
+    var raw = document.getElementById("namesInput").value;
+    var names = raw.split(/[\n,]/);
+    addAthletes(names);
+    document.getElementById("namesInput").value = "";
+    addPanel.style.display = "none";
+  };
+
+  document.getElementById("btnClearRun").onclick = function(){
+    var running = state.athletes.filter(function(a){ return a.running || a.accumulated > 0; });
+    if(!running.length){ toast("Нечего сбрасывать"); return; }
+    showModal("Сбросить все текущие (незаписанные) секундомеры? Сохранённая история не пострадает.", function(){
+      state.athletes.forEach(function(a){ resetAthlete(a.id, true); });
+      toast("Все секундомеры сброшены");
+    });
+  };
+
+  /* ---------- delete athlete confirm ---------- */
+  function confirmDeleteAthlete(id, name){
+    showModal("Удалить спортсмена «" + name + "»? Его сохранённая история результатов останется.", function(){
+      removeAthlete(id);
+      toast("Удалено: " + name);
+    });
+  }
+
+  /* ---------- modal ---------- */
+  var modalBackdrop = document.getElementById("modalBackdrop");
+  var modalText = document.getElementById("modalText");
+  var modalOkHandler = null;
+  function showModal(text, onOk){
+    modalText.textContent = text;
+    modalOkHandler = onOk;
+    modalBackdrop.classList.add("show");
+  }
+  function hideModal(){
+    modalBackdrop.classList.remove("show");
+    modalOkHandler = null;
+  }
+  document.getElementById("modalCancel").onclick = hideModal;
+  document.getElementById("modalOk").onclick = function(){
+    if(modalOkHandler) modalOkHandler();
+    hideModal();
+  };
+  modalBackdrop.onclick = function(e){ if(e.target === modalBackdrop) hideModal(); };
+
+  /* ---------- tabs ---------- */
+  var tabs = document.querySelectorAll(".tab");
+  tabs.forEach(function(tab){
+    tab.onclick = function(){
+      tabs.forEach(function(t){ t.classList.remove("active"); });
+      tab.classList.add("active");
+      document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+      document.getElementById("view-" + tab.dataset.view).classList.add("active");
+      if(tab.dataset.view === "history") renderHistory();
+    };
+  });
+
+  /* ---------- history view ---------- */
+  var historyContainer = document.getElementById("historyContainer");
+  var historyEmpty = document.getElementById("historyEmpty");
+  var historyCount = document.getElementById("historyCount");
+
+  function dayLabel(iso){
+    var d = new Date(iso);
+    return d.toLocaleDateString("ru-RU", { day:"2-digit", month:"long", year:"numeric" });
+  }
+
+  function renderHistory(){
+    historyContainer.innerHTML = "";
+    historyEmpty.style.display = state.history.length === 0 ? "block" : "none";
+    historyCount.textContent = state.history.length ? (state.history.length + " результатов") : "";
+
+    var groups = {};
+    var order = [];
+    state.history.forEach(function(h){
+      var key = dayLabel(h.date);
+      if(!groups[key]){ groups[key] = []; order.push(key); }
+      groups[key].push(h);
+    });
+
+    order.forEach(function(key){
+      var wrap = document.createElement("div");
+      wrap.className = "history-group";
+      var title = document.createElement("h3");
+      title.textContent = key;
+      wrap.appendChild(title);
+
+      var table = document.createElement("table");
+      table.innerHTML = "<thead><tr><th>Спортсмен</th><th>Время</th><th>Время</th><th>Круги</th><th></th></tr></thead>";
+      var tbody = document.createElement("tbody");
+      groups[key].forEach(function(h){
+        var tr = document.createElement("tr");
+        var timeStr = new Date(h.date).toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"});
+        var lapsStr = h.laps && h.laps.length ? h.laps.map(fmt).join(" · ") : "—";
+        tr.innerHTML =
+          "<td>" + escapeHtml(h.athleteName) + "</td>" +
+          "<td class='time'>" + fmt(h.total) + "</td>" +
+          "<td>" + timeStr + "</td>" +
+          "<td class='laps-cell'>" + lapsStr + "</td>";
+        var tdDel = document.createElement("td");
+        var delBtn = document.createElement("button");
+        delBtn.className = "del-row";
+        delBtn.innerHTML = "&#10005;";
+        delBtn.onclick = function(){
+          showModal("Удалить этот результат (" + h.athleteName + ", " + fmt(h.total) + ")?", function(){
+            state.history = state.history.filter(function(x){ return x.id !== h.id; });
+            persist();
+            renderHistory();
+          });
+        };
+        tdDel.appendChild(delBtn);
+        tr.appendChild(tdDel);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      historyContainer.appendChild(wrap);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  document.getElementById("btnClearHistory").onclick = function(){
+    if(!state.history.length){ toast("История пуста"); return; }
+    showModal("Удалить всю историю результатов? Это действие нельзя отменить.", function(){
+      state.history = [];
+      persist();
+      renderHistory();
+      toast("История очищена");
+    });
+  };
+
+  document.getElementById("btnExportCsv").onclick = function(){
+    if(!state.history.length){ toast("Нет данных для экспорта"); return; }
+    var rows = [["Дата","Время старта","Спортсмен","Результат","Круги"]];
+    state.history.slice().reverse().forEach(function(h){
+      var d = new Date(h.date);
+      rows.push([
+        d.toLocaleDateString("ru-RU"),
+        d.toLocaleTimeString("ru-RU"),
+        h.athleteName,
+        fmt(h.total),
+        (h.laps||[]).map(fmt).join(" | ")
+      ]);
+    });
+    var csv = rows.map(function(r){
+      return r.map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(";");
+    }).join("\n");
+    var blob = new Blob(["﻿" + csv], {type:"text/csv;charset=utf-8;"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "результаты_" + new Date().toISOString().slice(0,10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  /* ---------- init ---------- */
+  renderGrid();
+  renderHistory();
+
+  // prevent accidental pull-to-refresh / double-tap zoom on tablets
+  document.addEventListener("touchmove", function(e){
+    if(e.scale !== 1){ e.preventDefault(); }
+  }, { passive:false });
+  var lastTouchEnd = 0;
+  document.addEventListener("touchend", function(e){
+    var now = Date.now();
+    if(now - lastTouchEnd <= 300){ e.preventDefault(); }
+    lastTouchEnd = now;
+  }, false);
+
+})();
+</script>
+</body>
+</html>
