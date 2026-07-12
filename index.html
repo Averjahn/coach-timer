@@ -189,6 +189,33 @@
   .heats tbody tr:last-child td{border-bottom:none;}
   .heats th:last-child, .heats td:last-child{border-right:none;}
 
+  /* ---- History table: one row per athlete, times in a single line ---- */
+  .history-table{width:100%;border-collapse:collapse;}
+  .hist-th{
+    text-align:left;padding:11px 14px;font-size:12px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.4px;background:var(--panel-2);
+    border-bottom:1px solid var(--border);
+  }
+  .hist-th-name{width:1%;white-space:nowrap;}
+  .hist-row td{border-bottom:1px solid var(--border);padding:14px;vertical-align:middle;}
+  .hist-row:last-child td{border-bottom:none;}
+  .hist-name{font-size:15px;font-weight:700;white-space:nowrap;}
+  .hist-count{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px;}
+  .hist-results{
+    display:flex;align-items:center;gap:8px;
+    overflow-x:auto;white-space:nowrap;padding-bottom:2px;
+  }
+  .hist-chip{
+    display:inline-flex;align-items:baseline;gap:6px;flex-shrink:0;
+    background:var(--panel-2);border:1px solid var(--border);
+    border-radius:10px;padding:6px 10px;
+  }
+  .hist-chip .n{font-size:11px;color:var(--muted);font-weight:700;}
+  .hist-chip .t{
+    font-family:'SF Mono','Roboto Mono',ui-monospace,monospace;
+    font-weight:800;font-size:17px;color:var(--text);
+  }
+
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(0,0,0,0.6);
     display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
@@ -272,14 +299,11 @@
       <div>Результатов пока нет.<br>Останавливайте секундомеры — время будет сохраняться сюда.</div>
     </div>
     <div class="table-wrap" id="historyWrap" style="display:none;">
-      <table id="historyTable" style="width:100%;border-collapse:collapse;">
+      <table id="historyTable" class="history-table">
         <thead>
           <tr>
-            <th style="text-align:left;padding:11px 14px;font-size:12px;color:var(--muted);text-transform:uppercase;background:var(--panel-2);border-bottom:1px solid var(--border);">Спортсмен</th>
-            <th style="text-align:left;padding:11px 14px;font-size:12px;color:var(--muted);text-transform:uppercase;background:var(--panel-2);border-bottom:1px solid var(--border);">Заезд</th>
-            <th style="text-align:left;padding:11px 14px;font-size:12px;color:var(--muted);text-transform:uppercase;background:var(--panel-2);border-bottom:1px solid var(--border);">Старт</th>
-            <th style="text-align:left;padding:11px 14px;font-size:12px;color:var(--muted);text-transform:uppercase;background:var(--panel-2);border-bottom:1px solid var(--border);">Финиш</th>
-            <th style="text-align:left;padding:11px 14px;font-size:12px;color:var(--muted);text-transform:uppercase;background:var(--panel-2);border-bottom:1px solid var(--border);">Время</th>
+            <th class="hist-th hist-th-name">Спортсмен</th>
+            <th class="hist-th">Результаты</th>
           </tr>
         </thead>
         <tbody id="historyBody"></tbody>
@@ -356,11 +380,6 @@
   function fmtClock(ms){
     var d = new Date(ms);
     return pad(d.getHours(),2)+":"+pad(d.getMinutes(),2)+":"+pad(d.getSeconds(),2);
-  }
-
-  function dayLabel(ms){
-    var d = new Date(ms);
-    return d.toLocaleDateString("ru-RU", { day:"2-digit", month:"long", year:"numeric" });
   }
 
   function toast(msg){
@@ -675,51 +694,75 @@
   var historyCount = document.getElementById("historyCount");
   var historyBody = document.getElementById("historyBody");
 
-  function flatFinishedAttempts(){
+  function historyByAthlete(){
     var rows = [];
     state.athletes.forEach(function(a){
+      var results = [];
       a.attempts.forEach(function(att, idx){
         if(att.finish !== null){
-          rows.push({ athleteId:a.id, athleteName:a.name, heatIndex: idx+1, start:att.start, finish:att.finish });
+          results.push({ heatIndex: idx+1, start:att.start, finish:att.finish, dur: att.finish - att.start });
         }
       });
+      if(results.length){
+        rows.push({ athleteId:a.id, athleteName:a.name, results:results });
+      }
     });
-    rows.sort(function(x,y){ return y.finish - x.finish; });
     return rows;
   }
 
   function renderHistory(){
-    var rows = flatFinishedAttempts();
+    var rows = historyByAthlete();
+    var totalAttempts = rows.reduce(function(sum,r){ return sum + r.results.length; }, 0);
     historyEmpty.style.display = rows.length === 0 ? "block" : "none";
     historyWrap.style.display = rows.length === 0 ? "none" : "block";
-    historyCount.textContent = rows.length ? (rows.length + " результатов") : "";
+    historyCount.textContent = rows.length ? (rows.length + " спортсменов, " + totalAttempts + " результатов") : "";
 
     historyBody.innerHTML = "";
     rows.forEach(function(r){
       var tr = document.createElement("tr");
-      tr.innerHTML =
-        "<td style='padding:11px 14px;border-bottom:1px solid var(--border);font-size:14px;'>" + escapeHtml(r.athleteName) + "</td>" +
-        "<td style='padding:11px 14px;border-bottom:1px solid var(--border);font-size:14px;color:var(--muted);'>#" + r.heatIndex + "</td>" +
-        "<td style='padding:11px 14px;border-bottom:1px solid var(--border);font-family:ui-monospace,monospace;font-size:14px;'>" + fmtClock(r.start) + "</td>" +
-        "<td style='padding:11px 14px;border-bottom:1px solid var(--border);font-family:ui-monospace,monospace;font-size:14px;'>" + fmtClock(r.finish) + "</td>" +
-        "<td style='padding:11px 14px;border-bottom:1px solid var(--border);font-family:ui-monospace,monospace;font-weight:700;font-size:15px;'>" + fmtDur(r.finish - r.start) + "</td>";
+      tr.className = "hist-row";
+
+      var tdName = document.createElement("td");
+      var nameEl = document.createElement("div");
+      nameEl.className = "hist-name";
+      nameEl.textContent = r.athleteName;
+      var countEl = document.createElement("div");
+      countEl.className = "hist-count";
+      countEl.textContent = r.results.length + (r.results.length === 1 ? " заезд" : " заездов");
+      tdName.appendChild(nameEl);
+      tdName.appendChild(countEl);
+
+      var tdResults = document.createElement("td");
+      var wrap = document.createElement("div");
+      wrap.className = "hist-results";
+      r.results.forEach(function(res){
+        var chip = document.createElement("span");
+        chip.className = "hist-chip";
+        chip.title = "Заезд " + res.heatIndex + ": " + fmtClock(res.start) + " → " + fmtClock(res.finish);
+        chip.innerHTML = "<span class='n'>#" + res.heatIndex + "</span><span class='t'>" + fmtDur(res.dur) + "</span>";
+        wrap.appendChild(chip);
+      });
+      tdResults.appendChild(wrap);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdResults);
       historyBody.appendChild(tr);
     });
   }
 
   document.getElementById("btnExportCsv").onclick = function(){
-    var rows = flatFinishedAttempts();
+    var rows = historyByAthlete();
     if(!rows.length){ toast("Нет данных для экспорта"); return; }
-    var out = [["Дата","Спортсмен","Заезд","Старт","Финиш","Время"]];
-    rows.slice().reverse().forEach(function(r){
-      out.push([
-        dayLabel(r.start),
-        r.athleteName,
-        r.heatIndex,
-        fmtClock(r.start),
-        fmtClock(r.finish),
-        fmtDur(r.finish - r.start)
-      ]);
+    var maxHeats = Math.max.apply(null, rows.map(function(r){ return r.results.length; }));
+    var header = ["Спортсмен"];
+    for(var i=1;i<=maxHeats;i++) header.push("Заезд " + i);
+    var out = [header];
+    rows.forEach(function(r){
+      var line = [r.athleteName];
+      for(var i=0;i<maxHeats;i++){
+        line.push(r.results[i] ? fmtDur(r.results[i].dur) : "");
+      }
+      out.push(line);
     });
     var csv = out.map(function(r){
       return r.map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(";");
