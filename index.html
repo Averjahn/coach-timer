@@ -221,6 +221,17 @@
     font-weight:800;font-size:17px;color:var(--text);
   }
 
+  /* ---- Archive ---- */
+  .archive-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;margin-bottom:16px;
+  }
+  .archive-card-head{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:12px;gap:10px;flex-wrap:wrap;
+  }
+  .archive-date{font-size:16px;font-weight:800;}
+
   /* ---- Protocol upload / review ---- */
   .proto-upload{
     background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
@@ -316,6 +327,7 @@
   <button class="tab" data-view="history">История результатов</button>
   <button class="tab" data-view="protocol">Протокол</button>
   <button class="tab" data-view="leaderboard">Лидерборд</button>
+  <button class="tab" data-view="archive">Архив</button>
 </div>
 
 <main>
@@ -409,6 +421,14 @@
     </div>
   </div>
 
+  <div class="view" id="view-archive">
+    <div id="archiveEmpty" class="empty">
+      <div class="big">🗄</div>
+      <div>Архив пуст.<br>Когда вы нажмёте «Новая сессия», текущие заезды сохранятся сюда с датой тренировки.</div>
+    </div>
+    <div id="archiveList" style="display:none;"></div>
+  </div>
+
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -443,10 +463,11 @@
         s.athletes = s.athletes || [];
         s.athletes.forEach(function(a){ a.attempts = a.attempts || []; });
         s.protocolSession = s.protocolSession || null;
+        s.archive = s.archive || [];
         return s;
       }
     }catch(e){}
-    return { athletes: [], nextId: 1, protocolSession: null };
+    return { athletes: [], nextId: 1, protocolSession: null, archive: [] };
   }
 
   var saveTimer = null;
@@ -759,16 +780,30 @@
     addPanel.style.display = "none";
   };
 
+  function archiveCurrentSession(){
+    var rows = state.athletes.filter(function(a){ return a.attempts.length > 0; }).map(function(a){
+      return { name: a.name, attempts: a.attempts.map(function(att){ return { start: att.start, finish: att.finish }; }) };
+    });
+    if(!rows.length) return;
+    state.archive.unshift({
+      id: "s" + Date.now() + "_" + Math.random().toString(36).slice(2,7),
+      createdAt: Date.now(),
+      athletes: rows
+    });
+  }
+
   document.getElementById("btnClearRun").onclick = function(){
     var any = state.athletes.some(function(a){ return a.attempts.length > 0; });
     if(!any){ toast("Нечего очищать"); return; }
-    showModal("Начать новую сессию? Все заезды всех спортсменов будут удалены (список спортсменов останется).", function(){
+    showModal("Начать новую сессию? Текущие заезды сохранятся в архиве по сегодняшней дате, а у спортсменов начнётся отсчёт заново.", function(){
+      archiveCurrentSession();
       state.athletes.forEach(function(a){ a.attempts = []; });
       persist();
       renderTable();
       renderHistory();
-      toast("Новая сессия начата");
-    });
+      renderArchive();
+      toast("Сессия сохранена в архив, начата новая");
+    }, { okLabel: "Сохранить и начать", okStyle: "neutral" });
   };
 
   /* ---------- modal ---------- */
@@ -809,6 +844,7 @@
     if(view === "history") renderHistory();
     if(view === "protocol") renderProtocolReview();
     if(view === "leaderboard") renderLeaderboard();
+    if(view === "archive") renderArchive();
   }
   tabs.forEach(function(tab){
     tab.onclick = function(){ switchTab(tab.dataset.view); };
@@ -903,6 +939,161 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  /* ---------- archive of past sessions ---------- */
+  var archiveEmpty = document.getElementById("archiveEmpty");
+  var archiveList = document.getElementById("archiveList");
+  var WEEKDAYS = ["Воскресенье","Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
+
+  function fmtArchiveDate(ms){
+    var d = new Date(ms);
+    return pad(d.getDate(),2)+"."+pad(d.getMonth()+1,2)+"."+d.getFullYear() + " · " + WEEKDAYS[d.getDay()];
+  }
+
+  function archiveSessionResults(session){
+    var rows = [];
+    session.athletes.forEach(function(a){
+      var results = [];
+      a.attempts.forEach(function(att, idx){
+        if(att.finish !== null){
+          results.push({ heatIndex: idx+1, start:att.start, finish:att.finish, dur: att.finish - att.start });
+        }
+      });
+      if(results.length) rows.push({ name: a.name, results: results });
+    });
+    return rows;
+  }
+
+  function removeArchiveSession(id){
+    state.archive = state.archive.filter(function(s){ return s.id !== id; });
+    persist();
+    renderArchive();
+  }
+
+  function confirmDeleteArchiveSession(id, label){
+    showModal("Удалить тренировку «" + label + "» из архива? Действие необратимо.", function(){
+      removeArchiveSession(id);
+      toast("Удалено из архива");
+    });
+  }
+
+  function exportArchiveSessionCsv(session){
+    var rows = archiveSessionResults(session);
+    if(!rows.length){ toast("Нет данных для экспорта"); return; }
+    var maxHeats = Math.max.apply(null, rows.map(function(r){ return r.results.length; }));
+    var header = ["Спортсмен"];
+    for(var i=1;i<=maxHeats;i++) header.push("Заезд " + i);
+    var out = [header];
+    rows.forEach(function(r){
+      var line = [r.name];
+      for(var i=0;i<maxHeats;i++){
+        line.push(r.results[i] ? fmtDur(r.results[i].dur) : "");
+      }
+      out.push(line);
+    });
+    var csv = out.map(function(r){
+      return r.map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(";");
+    }).join("\n");
+    var blob = new Blob(["﻿" + csv], {type:"text/csv;charset=utf-8;"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "тренировка_" + new Date(session.createdAt).toISOString().slice(0,10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function buildArchiveResultsTable(rows){
+    var table = document.createElement("table");
+    table.className = "history-table";
+    var tbody = document.createElement("tbody");
+    rows.forEach(function(r){
+      var tr = document.createElement("tr");
+      tr.className = "hist-row";
+
+      var tdName = document.createElement("td");
+      var nameEl = document.createElement("div");
+      nameEl.className = "hist-name";
+      nameEl.textContent = r.name;
+      var countEl = document.createElement("div");
+      countEl.className = "hist-count";
+      countEl.textContent = r.results.length + (r.results.length === 1 ? " заезд" : " заездов");
+      tdName.appendChild(nameEl);
+      tdName.appendChild(countEl);
+
+      var tdResults = document.createElement("td");
+      var wrap = document.createElement("div");
+      wrap.className = "hist-results";
+      r.results.forEach(function(res){
+        var chip = document.createElement("span");
+        chip.className = "hist-chip";
+        chip.title = "Заезд " + res.heatIndex + ": " + fmtClock(res.start) + " → " + fmtClock(res.finish);
+        chip.innerHTML = "<span class='n'>#" + res.heatIndex + "</span><span class='t'>" + fmtDur(res.dur) + "</span>";
+        wrap.appendChild(chip);
+      });
+      tdResults.appendChild(wrap);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdResults);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    return table;
+  }
+
+  function renderArchive(){
+    archiveEmpty.style.display = state.archive.length === 0 ? "block" : "none";
+    archiveList.style.display = state.archive.length === 0 ? "none" : "block";
+    archiveList.innerHTML = "";
+
+    state.archive.forEach(function(session){
+      var rows = archiveSessionResults(session);
+      var totalAttempts = rows.reduce(function(sum,r){ return sum + r.results.length; }, 0);
+
+      var card = document.createElement("div");
+      card.className = "archive-card";
+
+      var head = document.createElement("div");
+      head.className = "archive-card-head";
+
+      var info = document.createElement("div");
+      var dateEl = document.createElement("div");
+      dateEl.className = "archive-date";
+      dateEl.textContent = fmtArchiveDate(session.createdAt);
+      var metaEl = document.createElement("div");
+      metaEl.className = "hist-count";
+      metaEl.textContent = rows.length + " спортсменов, " + totalAttempts + " результатов";
+      info.appendChild(dateEl);
+      info.appendChild(metaEl);
+      head.appendChild(info);
+
+      var actions = document.createElement("div");
+      actions.style.cssText = "display:flex;gap:8px;align-items:center;";
+      var exportBtn = document.createElement("button");
+      exportBtn.className = "btn";
+      exportBtn.textContent = "Экспорт CSV";
+      exportBtn.onclick = function(){ exportArchiveSessionCsv(session); };
+      var delBtn = document.createElement("button");
+      delBtn.className = "row-icon-btn";
+      delBtn.innerHTML = "&#10005;";
+      delBtn.title = "Удалить тренировку из архива";
+      delBtn.onclick = function(){ confirmDeleteArchiveSession(session.id, fmtArchiveDate(session.createdAt)); };
+      actions.appendChild(exportBtn);
+      actions.appendChild(delBtn);
+      head.appendChild(actions);
+
+      card.appendChild(head);
+
+      var tableWrapEl = document.createElement("div");
+      tableWrapEl.className = "table-wrap";
+      tableWrapEl.appendChild(buildArchiveResultsTable(rows));
+      card.appendChild(tableWrapEl);
+
+      archiveList.appendChild(card);
+    });
+  }
 
   /* ---------- protocol PDF parsing ---------- */
   if(window.pdfjsLib){
@@ -1560,6 +1751,7 @@
   renderHistory();
   renderProtocolReview();
   renderLeaderboard();
+  renderArchive();
 
   // prevent accidental pull-to-refresh / double-tap zoom on tablets
   document.addEventListener("touchmove", function(e){
