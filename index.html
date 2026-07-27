@@ -174,7 +174,8 @@
   }
   .ath-row:last-child{border-bottom:none;}
   .ath-row.dragging{opacity:.55;background:var(--panel-2);}
-  .ath-main{display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:180px;}
+  .ath-main{display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:180px;cursor:grab;}
+  .ath-main:active{cursor:grabbing;}
   .ath-drag{
     width:26px;height:26px;flex-shrink:0;border-radius:8px;
     display:flex;align-items:center;justify-content:center;
@@ -749,7 +750,6 @@
       drag.className = "ath-drag";
       drag.innerHTML = "&#10247;";
       drag.title = "Зажмите и перетащите, чтобы изменить порядок";
-      attachDragHandlers(drag, a.id);
 
       var dot = document.createElement("div");
       dot.className = "status-dot" + (running ? " running" : "");
@@ -777,6 +777,7 @@
       main.appendChild(nameText);
       main.appendChild(undoBtn);
       main.appendChild(delBtn);
+      attachDragHandlers(main, a.id);
       row.appendChild(main);
 
       var run = document.createElement("div");
@@ -828,6 +829,7 @@
   function attachDragHandlers(handleEl, athleteId){
     handleEl.addEventListener("pointerdown", function(e){
       if(e.button !== undefined && e.button !== 0) return;
+      if(e.target.closest(".row-icon-btn")) return;
       var startX = e.clientX, startY = e.clientY;
       var cancelled = false;
       var timer = setTimeout(function(){
