@@ -70,10 +70,11 @@
   .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
   .btn.primary:hover{background:var(--blue-d);}
 
-  .tabs{display:flex;gap:6px;padding:10px 20px 0;}
+  .tabs{display:flex;gap:6px;padding:10px 20px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .tab{
     padding:9px 16px;font-size:14px;border-radius:10px 10px 0 0;
     background:transparent;color:var(--muted);border:1px solid transparent;
+    white-space:nowrap;flex-shrink:0;
   }
   .tab.active{background:var(--panel);color:var(--text);border:1px solid var(--border);border-bottom-color:var(--panel);}
 
@@ -99,77 +100,64 @@
   .add-panel-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px;flex-wrap:wrap;}
   .hint{font-size:12px;color:var(--muted);}
 
-  /* ---- Heats table ---- */
+  /* ---- Start groups ---- */
+  .groups-bar{margin-bottom:18px;}
+  .groups-bar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;}
+  .groups-bar-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .group-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:12px 14px;margin-bottom:10px;
+  }
+  .group-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .group-name{font-size:15px;font-weight:700;}
+  .group-name button{background:transparent;border:none;padding:0;margin-left:6px;color:var(--muted);font-weight:600;font-size:12px;cursor:pointer;text-decoration:underline;}
+  .group-members{font-size:12px;color:var(--muted);margin-top:2px;}
+  .group-card-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .group-card-actions .btn{font-size:13px;padding:9px 14px;}
+
+  .group-builder{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;margin-bottom:18px;
+  }
+  .group-name-input{
+    width:100%;background:var(--panel-2);color:var(--text);
+    border:1px solid var(--border);border-radius:10px;padding:10px 12px;
+    font-family:inherit;font-size:15px;margin-bottom:10px;
+  }
+  .group-checklist{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;}
+  .group-check-item{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;
+    border-bottom:1px solid var(--border);font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .group-check-item:last-child{border-bottom:none;}
+  .group-check-item input{width:18px;height:18px;flex-shrink:0;}
+
+  /* ---- Athlete list (start/finish + heat history) ---- */
   .table-wrap{
     background:var(--panel);
     border:1px solid var(--border);
     border-radius:var(--radius);
-    overflow:auto;
+    overflow:hidden;
     box-shadow:0 1px 3px rgba(22,28,44,0.06);
     max-width:100%;
   }
-  table.heats{
-    border-collapse:separate;
-    border-spacing:0;
-    width:100%;
-  }
-  table.heats th, table.heats td{
-    border-bottom:1px solid var(--border);
-    border-right:1px solid var(--border);
-    padding:0;
-    text-align:center;
-    white-space:nowrap;
-  }
-  table.heats thead th{
-    background:var(--panel-2);
-    color:var(--muted);
-    font-size:11px;
-    text-transform:uppercase;
-    letter-spacing:.4px;
-    font-weight:700;
-    padding:9px 10px;
-  }
-  .col-athlete{
-    position:sticky;left:0;z-index:6;
-    background:var(--panel);
-    text-align:left !important;
-    min-width:170px;
-    padding:0 !important;
-  }
-  thead .col-athlete{background:var(--panel-2);z-index:7;}
-  .col-start, .col-finish{min-width:118px;}
-
-  .name-cell{
-    display:flex;align-items:center;gap:8px;padding:10px 12px;
-  }
   .status-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0;}
   .status-dot.running{background:var(--green);box-shadow:0 0 8px var(--green);}
-  .name-text{
-    font-size:15px;font-weight:700;flex:1;min-width:0;
-    overflow:hidden;text-overflow:ellipsis;
-  }
   .row-icon-btn{
     background:transparent;color:var(--muted);
     width:28px;height:28px;border-radius:8px;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;font-size:14px;
   }
   .row-icon-btn:hover{background:var(--panel-2);color:var(--text);}
-
-  .heat-cell{
-    padding:8px;height:76px;
-    vertical-align:middle;
-  }
-  .heat-cell.running-start{background:rgba(22,163,74,0.07);}
-  .heat-cell.running-finish{background:rgba(22,163,74,0.07);}
   .cell-value{font-family:ui-monospace,monospace;font-weight:600;font-size:13px;color:var(--muted);}
   .cell-dur{
     font-family:'SF Mono','Roboto Mono',ui-monospace,monospace;
     font-weight:800;font-size:26px;color:var(--text);
     letter-spacing:.3px;line-height:1.1;
   }
-  .cell-dash{color:var(--border);font-size:16px;}
+  .cell-dash{color:var(--muted);font-size:13px;}
   .cell-btn{
-    padding:12px 6px;font-size:13px;width:100%;min-width:96px;
+    padding:12px 6px;font-size:13px;width:100%;min-width:0;
   }
   .btn-heat-start{background:var(--green);color:#fff;}
   .btn-heat-start:hover{background:var(--green-d);}
@@ -180,19 +168,39 @@
     font-weight:800;font-size:26px;color:var(--green);letter-spacing:.3px;
   }
 
-  .col-action{
-    position:sticky;right:0;z-index:6;
-    background:var(--panel);
-    min-width:118px;
-    border-left:1px solid var(--border);
+  .ath-row{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 14px;border-bottom:1px solid var(--border);
   }
-  thead .col-action{background:var(--panel-2);z-index:7;}
-  .col-action .cell-live{font-size:16px;margin-bottom:4px;}
-  .btn-heat-start{background:var(--green);color:#fff;}
-  .btn-heat-start:hover{background:var(--green-d);}
+  .ath-row:last-child{border-bottom:none;}
+  .ath-row.dragging{opacity:.55;background:var(--panel-2);}
+  .ath-main{display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:180px;}
+  .ath-drag{
+    width:26px;height:26px;flex-shrink:0;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:17px;cursor:grab;line-height:1;
+    touch-action:none;-webkit-user-select:none;user-select:none;
+  }
+  .ath-drag:active{cursor:grabbing;background:var(--panel-2);}
+  .ath-name{
+    font-size:15px;font-weight:700;flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .ath-run{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+  .ath-heats{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;padding:3px 0;}
+  .ath-heats .hist-chip{flex-shrink:0;}
+  .hist-chip.running{background:rgba(22,163,74,0.12);border-color:rgba(22,163,74,0.35);}
+  .hist-chip.running .t{color:var(--green);}
+  .ath-control{flex-shrink:0;width:112px;}
+  .ath-control .cell-btn{width:100%;}
+  .ath-control .cell-live{font-size:15px;margin-bottom:4px;text-align:center;}
 
-  .heats tbody tr:last-child td{border-bottom:none;}
-  .heats th:last-child, .heats td:last-child{border-right:none;}
+  @media (max-width:680px){
+    .ath-row{flex-wrap:wrap;row-gap:10px;}
+    .ath-main{width:100%;}
+    .ath-run{width:100%;}
+    .ath-control{width:92px;}
+  }
 
   /* ---- History table: one row per athlete, times in a single line ---- */
   .history-table{width:100%;border-collapse:collapse;}
@@ -306,9 +314,6 @@
   @media (max-width:600px){
     header{padding:12px 14px;}
     main{padding:14px 14px 30px;}
-    .col-athlete{min-width:130px;}
-    .col-start, .col-finish{min-width:100px;}
-    .col-action{min-width:100px;}
   }
 </style>
 </head>
@@ -318,6 +323,7 @@
   <h1>⏱ Секундомеры <span id="sessionLabel">Тренировка</span></h1>
   <div class="header-actions">
     <button class="btn" id="btnShowAdd">+ Спортсмен</button>
+    <button class="btn" id="btnShowGroup">+ Группа</button>
     <button class="btn" id="btnClearRun" title="Очистить все заезды всех спортсменов">Новая сессия</button>
   </div>
 </header>
@@ -344,16 +350,32 @@
       </div>
     </div>
 
+    <div class="group-builder" id="groupBuilder" style="display:none;">
+      <input type="text" class="group-name-input" id="groupNameInput" placeholder="Название группы (необязательно)">
+      <div class="group-checklist" id="groupCheckList"></div>
+      <div class="add-panel-actions">
+        <span class="hint">Отметьте спортсменов, которые стартуют вместе</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" id="btnCancelGroup">Отмена</button>
+          <button class="btn primary" id="btnConfirmGroup">Создать группу</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="groups-bar" id="groupsBar" style="display:none;">
+      <div class="groups-bar-head">
+        <div class="groups-bar-title">Группы старта</div>
+      </div>
+      <div id="groupsList"></div>
+    </div>
+
     <div id="emptyState" class="empty" style="display:none;">
       <div class="big">🏃</div>
       <div>Пока нет ни одного спортсмена.<br>Нажмите «+ Спортсмен», чтобы добавить список.</div>
     </div>
 
     <div class="table-wrap" id="tableWrap" style="display:none;">
-      <table class="heats" id="heatsTable">
-        <thead id="heatsHead"></thead>
-        <tbody id="heatsBody"></tbody>
-      </table>
+      <div class="ath-list" id="heatsList"></div>
     </div>
   </div>
 
@@ -464,10 +486,11 @@
         s.athletes.forEach(function(a){ a.attempts = a.attempts || []; });
         s.protocolSession = s.protocolSession || null;
         s.archive = s.archive || [];
+        s.groups = s.groups || [];
         return s;
       }
     }catch(e){}
-    return { athletes: [], nextId: 1, protocolSession: null, archive: [] };
+    return { athletes: [], nextId: 1, protocolSession: null, archive: [], groups: [] };
   }
 
   var saveTimer = null;
@@ -548,6 +571,7 @@
     a.attempts.push({ start: Date.now(), finish: null });
     persist();
     renderTable();
+    renderGroups();
   }
 
   function finishHeat(athleteId){
@@ -557,6 +581,7 @@
     persist();
     renderTable();
     renderHistory();
+    renderGroups();
     var last = a.attempts[a.attempts.length-1];
     toast(a.name + ": записано " + fmtDur(last.finish - last.start));
   }
@@ -568,6 +593,7 @@
     persist();
     renderTable();
     renderHistory();
+    renderGroups();
   }
 
   function addAthletes(names){
@@ -587,9 +613,14 @@
 
   function removeAthlete(id){
     state.athletes = state.athletes.filter(function(a){ return a.id !== id; });
+    state.groups.forEach(function(g){
+      g.athleteIds = g.athleteIds.filter(function(aid){ return aid !== id; });
+    });
+    state.groups = state.groups.filter(function(g){ return g.athleteIds.length > 0; });
     persist();
     renderTable();
     renderHistory();
+    renderGroups();
   }
 
   function confirmDeleteAthlete(id, name){
@@ -599,132 +630,169 @@
     });
   }
 
+  /* ---------- start groups ---------- */
+  function findGroup(id){
+    for(var i=0;i<state.groups.length;i++){
+      if(state.groups[i].id === id) return state.groups[i];
+    }
+    return null;
+  }
+
+  function startGroupHeat(groupId){
+    var g = findGroup(groupId);
+    if(!g) return;
+    var now = Date.now();
+    var count = 0;
+    g.athleteIds.forEach(function(id){
+      var a = findAthlete(id);
+      if(a && !isRunning(a)){
+        a.attempts.push({ start: now, finish: null });
+        count++;
+      }
+    });
+    if(count){
+      persist();
+      renderTable();
+      renderGroups();
+      toast("Группа «" + g.name + "»: старт (" + count + ")");
+    }
+  }
+
+  function finishGroupHeat(groupId){
+    var g = findGroup(groupId);
+    if(!g) return;
+    var now = Date.now();
+    var count = 0;
+    g.athleteIds.forEach(function(id){
+      var a = findAthlete(id);
+      if(a && isRunning(a)){
+        a.attempts[a.attempts.length-1].finish = now;
+        count++;
+      }
+    });
+    if(count){
+      persist();
+      renderTable();
+      renderHistory();
+      renderGroups();
+      toast("Группа «" + g.name + "»: финиш (" + count + ")");
+    }
+  }
+
+  function removeGroup(id){
+    state.groups = state.groups.filter(function(g){ return g.id !== id; });
+    persist();
+    renderGroups();
+  }
+
+  function confirmDeleteGroup(id, name){
+    showModal("Удалить группу «" + name + "»? Спортсмены останутся, удалится только группа.", function(){
+      removeGroup(id);
+      toast("Группа удалена");
+    });
+  }
+
+  function saveGroup(editId, name, athleteIds){
+    if(!athleteIds.length) return false;
+    if(editId){
+      var existing = findGroup(editId);
+      if(!existing) return false;
+      existing.name = name;
+      existing.athleteIds = athleteIds;
+    } else {
+      state.groups.push({
+        id: "g" + Date.now() + "_" + Math.random().toString(36).slice(2,7),
+        name: name || ("Группа " + (state.groups.length + 1)),
+        athleteIds: athleteIds
+      });
+    }
+    persist();
+    renderGroups();
+    return true;
+  }
+
   /* ---------- table rendering ---------- */
   var tableWrap = document.getElementById("tableWrap");
   var emptyState = document.getElementById("emptyState");
-  var heatsHead = document.getElementById("heatsHead");
-  var heatsBody = document.getElementById("heatsBody");
+  var heatsList = document.getElementById("heatsList");
 
-  function maxCols(){
-    var max = 1;
-    state.athletes.forEach(function(a){
-      max = Math.max(max, a.attempts.length);
-    });
-    return max;
+  function buildHeatChip(att, idx, athleteId){
+    var chip = document.createElement("span");
+    if(att.finish !== null){
+      chip.className = "hist-chip";
+      chip.title = "Заезд " + (idx+1) + ": " + fmtClock(att.start) + " → " + fmtClock(att.finish);
+      chip.innerHTML = "<span class='n'>#" + (idx+1) + "</span><span class='t'>" + fmtDur(att.finish - att.start) + "</span>";
+    } else {
+      chip.className = "hist-chip running";
+      chip.title = "Заезд " + (idx+1) + ": идёт с " + fmtClock(att.start);
+      chip.innerHTML = "<span class='n'>#" + (idx+1) + "</span><span class='t live' id='chiplive-" + athleteId + "'>" + fmtDur(Date.now() - att.start) + "</span>";
+    }
+    return chip;
   }
 
   function renderTable(){
     emptyState.style.display = state.athletes.length === 0 ? "block" : "none";
     tableWrap.style.display = state.athletes.length === 0 ? "none" : "block";
+    heatsList.innerHTML = "";
     if(state.athletes.length === 0) return;
 
-    var cols = maxCols();
-
-    // header
-    var htr1 = document.createElement("tr");
-    var thName = document.createElement("th");
-    thName.className = "col-athlete";
-    thName.textContent = "Спортсмен";
-    thName.rowSpan = 2;
-    htr1.appendChild(thName);
-    var htr2 = document.createElement("tr");
-    for(var c=0;c<cols;c++){
-      var thHeat = document.createElement("th");
-      thHeat.colSpan = 2;
-      thHeat.textContent = "Заезд " + (c+1);
-      htr1.appendChild(thHeat);
-
-      var thS = document.createElement("th");
-      thS.className = "col-start";
-      thS.textContent = "Старт";
-      var thF = document.createElement("th");
-      thF.className = "col-finish";
-      thF.textContent = "Финиш";
-      htr2.appendChild(thS);
-      htr2.appendChild(thF);
-    }
-    var thAction = document.createElement("th");
-    thAction.className = "col-action";
-    thAction.rowSpan = 2;
-    thAction.textContent = "Управление";
-    htr1.appendChild(thAction);
-    heatsHead.innerHTML = "";
-    heatsHead.appendChild(htr1);
-    heatsHead.appendChild(htr2);
-
-    // body
-    heatsBody.innerHTML = "";
     state.athletes.forEach(function(a){
       var running = isRunning(a);
-      var tr = document.createElement("tr");
-      tr.id = "row-" + a.id;
+      var row = document.createElement("div");
+      row.className = "ath-row";
+      row.dataset.id = a.id;
 
-      var tdName = document.createElement("td");
-      tdName.className = "col-athlete";
-      var nameCell = document.createElement("div");
-      nameCell.className = "name-cell";
+      var main = document.createElement("div");
+      main.className = "ath-main";
+
+      var drag = document.createElement("div");
+      drag.className = "ath-drag";
+      drag.innerHTML = "&#10247;";
+      drag.title = "Зажмите и перетащите, чтобы изменить порядок";
+      attachDragHandlers(drag, a.id);
+
       var dot = document.createElement("div");
       dot.className = "status-dot" + (running ? " running" : "");
       dot.id = "dot-" + a.id;
+
       var nameText = document.createElement("div");
-      nameText.className = "name-text";
+      nameText.className = "ath-name";
       nameText.textContent = a.name;
+
       var undoBtn = document.createElement("button");
       undoBtn.className = "row-icon-btn";
       undoBtn.innerHTML = "&#8630;";
       undoBtn.title = "Отменить последний заезд";
       undoBtn.style.visibility = a.attempts.length ? "visible" : "hidden";
       undoBtn.onclick = function(){ undoLastHeat(a.id); };
+
       var delBtn = document.createElement("button");
       delBtn.className = "row-icon-btn";
       delBtn.innerHTML = "&#10005;";
       delBtn.title = "Удалить спортсмена";
       delBtn.onclick = function(){ confirmDeleteAthlete(a.id, a.name); };
-      nameCell.appendChild(dot);
-      nameCell.appendChild(nameText);
-      nameCell.appendChild(undoBtn);
-      nameCell.appendChild(delBtn);
-      tdName.appendChild(nameCell);
-      tr.appendChild(tdName);
 
-      for(var c=0;c<cols;c++){
-        var attempt = a.attempts[c];
-        var tdStart = document.createElement("td");
-        tdStart.className = "heat-cell col-start";
-        var tdFinish = document.createElement("td");
-        tdFinish.className = "heat-cell col-finish";
+      main.appendChild(drag);
+      main.appendChild(dot);
+      main.appendChild(nameText);
+      main.appendChild(undoBtn);
+      main.appendChild(delBtn);
+      row.appendChild(main);
 
-        if(attempt){
-          var startVal = document.createElement("div");
-          startVal.className = "cell-value";
-          startVal.textContent = fmtClock(attempt.start);
-          tdStart.appendChild(startVal);
+      var run = document.createElement("div");
+      run.className = "ath-run";
 
-          if(attempt.finish !== null){
-            var dur = document.createElement("div");
-            dur.className = "cell-dur";
-            dur.textContent = fmtDur(attempt.finish - attempt.start);
-            var finVal = document.createElement("div");
-            finVal.className = "cell-value";
-            finVal.textContent = fmtClock(attempt.finish);
-            tdFinish.appendChild(dur);
-            tdFinish.appendChild(finVal);
-          } else {
-            tdStart.classList.add("running-start");
-            tdFinish.classList.add("running-finish");
-            tdFinish.innerHTML = "<span class='cell-dash'>идёт…</span>";
-          }
-        } else {
-          tdStart.innerHTML = "<span class='cell-dash'>—</span>";
-          tdFinish.innerHTML = "<span class='cell-dash'>—</span>";
-        }
-
-        tr.appendChild(tdStart);
-        tr.appendChild(tdFinish);
+      var heats = document.createElement("div");
+      heats.className = "ath-heats";
+      if(a.attempts.length){
+        a.attempts.forEach(function(att, idx){ heats.appendChild(buildHeatChip(att, idx, a.id)); });
+      } else {
+        heats.innerHTML = "<span class='cell-dash'>Ещё нет заездов</span>";
       }
+      run.appendChild(heats);
 
-      var tdAction = document.createElement("td");
-      tdAction.className = "col-action";
+      var control = document.createElement("div");
+      control.className = "ath-control";
       if(running){
         var lastAttempt = a.attempts[a.attempts.length-1];
         var live = document.createElement("div");
@@ -735,20 +803,113 @@
         finishBtn.className = "cell-btn btn-heat-finish";
         finishBtn.textContent = "■ Финиш";
         finishBtn.onclick = function(){ finishHeat(a.id); };
-        tdAction.appendChild(live);
-        tdAction.appendChild(finishBtn);
+        control.appendChild(live);
+        control.appendChild(finishBtn);
       } else {
         var startBtn = document.createElement("button");
         startBtn.className = "cell-btn btn-heat-start";
         startBtn.textContent = "▶ Старт";
         startBtn.title = "Начать заезд " + (a.attempts.length + 1);
         startBtn.onclick = function(){ startHeat(a.id); };
-        tdAction.appendChild(startBtn);
+        control.appendChild(startBtn);
       }
-      tr.appendChild(tdAction);
+      run.appendChild(control);
+      row.appendChild(run);
 
-      heatsBody.appendChild(tr);
+      heatsList.appendChild(row);
     });
+  }
+
+  /* ---------- drag to reorder (press-and-hold the handle, then drag) ---------- */
+  var dragState = null;
+  var LONG_PRESS_MS = 260;
+  var MOVE_CANCEL_PX = 8;
+
+  function attachDragHandlers(handleEl, athleteId){
+    handleEl.addEventListener("pointerdown", function(e){
+      if(e.button !== undefined && e.button !== 0) return;
+      var startX = e.clientX, startY = e.clientY;
+      var cancelled = false;
+      var timer = setTimeout(function(){
+        cleanup();
+        beginDrag(athleteId, handleEl);
+      }, LONG_PRESS_MS);
+
+      function onMove(ev){
+        if(Math.abs(ev.clientX-startX) > MOVE_CANCEL_PX || Math.abs(ev.clientY-startY) > MOVE_CANCEL_PX){
+          cancelled = true;
+          cleanup();
+        }
+      }
+      function onUp(){ cleanup(); }
+      function cleanup(){
+        clearTimeout(timer);
+        handleEl.removeEventListener("pointermove", onMove);
+        handleEl.removeEventListener("pointerup", onUp);
+        handleEl.removeEventListener("pointercancel", onUp);
+      }
+      handleEl.addEventListener("pointermove", onMove);
+      handleEl.addEventListener("pointerup", onUp);
+      handleEl.addEventListener("pointercancel", onUp);
+    });
+  }
+
+  function beginDrag(athleteId, handleEl){
+    var idx = state.athletes.findIndex(function(a){ return a.id === athleteId; });
+    if(idx === -1) return;
+    var rowEl = handleEl.closest(".ath-row");
+    if(!rowEl) return;
+    rowEl.classList.add("dragging");
+    if(navigator.vibrate) navigator.vibrate(12);
+    dragState = { id: athleteId };
+    document.addEventListener("pointermove", onDragMove);
+    document.addEventListener("pointerup", endDrag);
+    document.addEventListener("pointercancel", endDrag);
+  }
+
+  function onDragMove(e){
+    if(!dragState) return;
+    e.preventDefault();
+    var y = e.clientY;
+    var curIdx = state.athletes.findIndex(function(a){ return a.id === dragState.id; });
+    if(curIdx === -1) return;
+    var rows = heatsList.querySelectorAll(".ath-row");
+    var targetIdx = 0;
+    for(var i=0;i<rows.length;i++){
+      var r = rows[i];
+      if(r.dataset.id === dragState.id) continue;
+      var rect = r.getBoundingClientRect();
+      var mid = rect.top + rect.height/2;
+      if(mid < y) targetIdx++;
+    }
+    if(targetIdx !== curIdx){
+      moveAthlete(curIdx, targetIdx);
+      renderTable();
+      restoreDragVisual();
+    }
+  }
+
+  function restoreDragVisual(){
+    if(!dragState) return;
+    var rowEl = heatsList.querySelector('.ath-row[data-id="' + dragState.id + '"]');
+    if(rowEl) rowEl.classList.add("dragging");
+  }
+
+  function moveAthlete(from, to){
+    var arr = state.athletes;
+    var item = arr.splice(from, 1)[0];
+    arr.splice(to, 0, item);
+  }
+
+  function endDrag(){
+    if(!dragState) return;
+    var rowEl = heatsList.querySelector('.ath-row[data-id="' + dragState.id + '"]');
+    if(rowEl) rowEl.classList.remove("dragging");
+    document.removeEventListener("pointermove", onDragMove);
+    document.removeEventListener("pointerup", endDrag);
+    document.removeEventListener("pointercancel", endDrag);
+    dragState = null;
+    persist();
   }
 
   /* ---------- ticking ---------- */
@@ -756,8 +917,11 @@
     state.athletes.forEach(function(a){
       if(isRunning(a)){
         var attempt = a.attempts[a.attempts.length-1];
+        var elapsed = fmtDur(Date.now() - attempt.start);
         var el = document.getElementById("live-" + a.id);
-        if(el) el.textContent = fmtDur(Date.now() - attempt.start);
+        if(el) el.textContent = elapsed;
+        var chipEl = document.getElementById("chiplive-" + a.id);
+        if(chipEl) chipEl.textContent = elapsed;
       }
     });
   }, 50);
@@ -766,7 +930,10 @@
   var addPanel = document.getElementById("addPanel");
   document.getElementById("btnShowAdd").onclick = function(){
     addPanel.style.display = addPanel.style.display === "none" ? "block" : "none";
-    if(addPanel.style.display === "block") document.getElementById("namesInput").focus();
+    if(addPanel.style.display === "block"){
+      document.getElementById("namesInput").focus();
+      groupBuilder.style.display = "none";
+    }
   };
   document.getElementById("btnCancelAdd").onclick = function(){
     addPanel.style.display = "none";
@@ -779,6 +946,122 @@
     document.getElementById("namesInput").value = "";
     addPanel.style.display = "none";
   };
+
+  /* ---------- group builder panel ---------- */
+  var groupBuilder = document.getElementById("groupBuilder");
+  var groupNameInput = document.getElementById("groupNameInput");
+  var groupCheckList = document.getElementById("groupCheckList");
+  var groupsBar = document.getElementById("groupsBar");
+  var groupsList = document.getElementById("groupsList");
+  var editingGroupId = null;
+
+  function openGroupBuilder(editId){
+    if(state.athletes.length < 2){
+      toast("Нужно минимум 2 спортсмена, чтобы создать группу");
+      return;
+    }
+    editingGroupId = editId || null;
+    var group = editId ? findGroup(editId) : null;
+    groupNameInput.value = group ? group.name : "";
+    groupCheckList.innerHTML = "";
+    state.athletes.forEach(function(a){
+      var label = document.createElement("label");
+      label.className = "group-check-item";
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = a.id;
+      cb.checked = group ? group.athleteIds.indexOf(a.id) !== -1 : false;
+      var span = document.createElement("span");
+      span.textContent = a.name;
+      label.appendChild(cb);
+      label.appendChild(span);
+      groupCheckList.appendChild(label);
+    });
+    document.getElementById("btnConfirmGroup").textContent = group ? "Сохранить группу" : "Создать группу";
+    addPanel.style.display = "none";
+    groupBuilder.style.display = "block";
+  }
+
+  function closeGroupBuilder(){
+    groupBuilder.style.display = "none";
+    editingGroupId = null;
+  }
+
+  document.getElementById("btnShowGroup").onclick = function(){
+    if(groupBuilder.style.display === "block"){ closeGroupBuilder(); return; }
+    openGroupBuilder(null);
+  };
+  document.getElementById("btnCancelGroup").onclick = closeGroupBuilder;
+  document.getElementById("btnConfirmGroup").onclick = function(){
+    var checked = Array.prototype.slice.call(groupCheckList.querySelectorAll("input:checked")).map(function(cb){ return cb.value; });
+    if(checked.length < 2){ toast("Выберите минимум 2 спортсменов"); return; }
+    var wasEdit = !!editingGroupId;
+    var ok = saveGroup(editingGroupId, groupNameInput.value.trim(), checked);
+    if(ok){
+      toast(wasEdit ? "Группа обновлена" : "Группа создана");
+      closeGroupBuilder();
+    }
+  };
+
+  function renderGroups(){
+    groupsBar.style.display = state.groups.length ? "block" : "none";
+    groupsList.innerHTML = "";
+    state.groups.forEach(function(g){
+      var members = g.athleteIds.map(findAthlete).filter(Boolean);
+      var runningCount = members.filter(isRunning).length;
+      var idleCount = members.length - runningCount;
+
+      var card = document.createElement("div");
+      card.className = "group-card";
+
+      var head = document.createElement("div");
+      head.className = "group-card-head";
+
+      var info = document.createElement("div");
+      var nameEl = document.createElement("div");
+      nameEl.className = "group-name";
+      nameEl.textContent = g.name;
+      var editBtn = document.createElement("button");
+      editBtn.textContent = "изменить";
+      editBtn.onclick = function(){ openGroupBuilder(g.id); };
+      nameEl.appendChild(editBtn);
+      var membersEl = document.createElement("div");
+      membersEl.className = "group-members";
+      membersEl.textContent = members.map(function(a){ return a.name; }).join(", ") || "нет участников";
+      info.appendChild(nameEl);
+      info.appendChild(membersEl);
+      head.appendChild(info);
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "row-icon-btn";
+      delBtn.innerHTML = "&#10005;";
+      delBtn.title = "Удалить группу";
+      delBtn.onclick = function(){ confirmDeleteGroup(g.id, g.name); };
+      head.appendChild(delBtn);
+      card.appendChild(head);
+
+      var actions = document.createElement("div");
+      actions.className = "group-card-actions";
+      if(idleCount > 0){
+        var startBtn = document.createElement("button");
+        startBtn.className = "btn primary";
+        startBtn.textContent = "▶ Старт группы (" + idleCount + ")";
+        startBtn.onclick = function(){ startGroupHeat(g.id); };
+        actions.appendChild(startBtn);
+      }
+      if(runningCount > 0){
+        var finishBtn = document.createElement("button");
+        finishBtn.className = "btn";
+        finishBtn.style.cssText = "background:var(--red);color:#fff;";
+        finishBtn.textContent = "■ Финиш группы (" + runningCount + ")";
+        finishBtn.onclick = function(){ finishGroupHeat(g.id); };
+        actions.appendChild(finishBtn);
+      }
+      card.appendChild(actions);
+
+      groupsList.appendChild(card);
+    });
+  }
 
   function archiveCurrentSession(){
     var rows = state.athletes.filter(function(a){ return a.attempts.length > 0; }).map(function(a){
@@ -800,6 +1083,7 @@
       state.athletes.forEach(function(a){ a.attempts = []; });
       persist();
       renderTable();
+      renderGroups();
       renderHistory();
       renderArchive();
       toast("Сессия сохранена в архив, начата новая");
@@ -1748,6 +2032,7 @@
 
   /* ---------- init ---------- */
   renderTable();
+  renderGroups();
   renderHistory();
   renderProtocolReview();
   renderLeaderboard();
