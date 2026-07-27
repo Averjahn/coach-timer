@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Секундомеры тренера</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
   :root{
     --bg:#f3f5fa;
@@ -178,13 +180,16 @@
     font-weight:800;font-size:26px;color:var(--green);letter-spacing:.3px;
   }
 
-  .col-action{min-width:64px;}
-  .action-btn{
-    width:44px;height:44px;border-radius:12px;
-    background:var(--green);color:#fff;font-size:20px;font-weight:800;
-    display:inline-flex;align-items:center;justify-content:center;
+  .col-action{
+    position:sticky;right:0;z-index:6;
+    background:var(--panel);
+    min-width:118px;
+    border-left:1px solid var(--border);
   }
-  .action-btn:hover{background:var(--green-d);}
+  thead .col-action{background:var(--panel-2);z-index:7;}
+  .col-action .cell-live{font-size:16px;margin-bottom:4px;}
+  .btn-heat-start{background:var(--green);color:#fff;}
+  .btn-heat-start:hover{background:var(--green-d);}
 
   .heats tbody tr:last-child td{border-bottom:none;}
   .heats th:last-child, .heats td:last-child{border-right:none;}
@@ -216,6 +221,56 @@
     font-weight:800;font-size:17px;color:var(--text);
   }
 
+  /* ---- Protocol upload / review ---- */
+  .proto-upload{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .proto-header{margin-bottom:16px;}
+  .proto-title{font-size:18px;font-weight:800;}
+  .proto-date{font-size:13px;color:var(--muted);margin-top:2px;}
+  .proto-group-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:12px;display:flex;flex-direction:column;align-items:stretch;
+  }
+  .proto-group-info{flex:1;min-width:200px;}
+  .proto-group-label{font-weight:700;font-size:15px;}
+  .proto-group-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .proto-group-start{display:flex;align-items:center;gap:8px;}
+  .proto-group-start label{font-size:12px;color:var(--muted);}
+  .proto-group-start input{
+    font-family:ui-monospace,monospace;font-size:16px;font-weight:700;
+    border:1px solid var(--border);border-radius:8px;padding:8px 10px;
+    background:var(--panel-2);color:var(--text);width:130px;
+  }
+  .proto-cell-input:hover, .proto-cell-input:focus{
+    border-color:var(--border) !important;background:var(--panel-2);outline:none;
+  }
+  .proto-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:10px;}
+
+  /* ---- Leaderboard ---- */
+  .lb-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+  .lb-group{margin-bottom:26px;}
+  .lb-group h3{font-size:15px;font-weight:700;margin:0 0 10px;}
+  .lb-group-meta{font-size:12px;color:var(--muted);font-weight:500;}
+  .lb-table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .lb-th{
+    text-align:center;padding:10px 12px;font-size:11px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.4px;background:var(--panel-2);
+    border-bottom:1px solid var(--border);
+  }
+  .lb-table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle;text-align:center;}
+  .lb-table tbody tr:last-child td{border-bottom:none;}
+  .lb-place{font-weight:800;font-size:15px;color:var(--muted);width:1%;white-space:nowrap;}
+  .lb-bib{color:var(--muted);font-family:ui-monospace,monospace;font-weight:700;}
+  .lb-name{font-weight:700;text-align:left !important;}
+  .lb-gap{font-family:ui-monospace,monospace;font-weight:800;}
+  .lb-gap.leader{color:var(--green);}
+  .lb-status-pending{color:var(--muted);font-size:13px;}
+  .lb-status-running{color:var(--blue);font-weight:800;font-family:ui-monospace,monospace;font-size:15px;}
+  .lb-mark-btn{background:var(--red);color:#fff;padding:10px 18px;font-size:14px;}
+  .lb-mark-btn:hover{background:var(--red-d);}
+
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(0,0,0,0.6);
     display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
@@ -242,6 +297,7 @@
     main{padding:14px 14px 30px;}
     .col-athlete{min-width:130px;}
     .col-start, .col-finish{min-width:100px;}
+    .col-action{min-width:100px;}
   }
 </style>
 </head>
@@ -258,6 +314,8 @@
 <div class="tabs">
   <button class="tab active" data-view="timers">Секундомеры</button>
   <button class="tab" data-view="history">История результатов</button>
+  <button class="tab" data-view="protocol">Протокол</button>
+  <button class="tab" data-view="leaderboard">Лидерборд</button>
 </div>
 
 <main>
@@ -311,6 +369,46 @@
     </div>
   </div>
 
+  <div class="view" id="view-protocol">
+    <div class="proto-upload">
+      <input type="file" id="protoFile" accept="application/pdf" style="display:none;">
+      <button class="btn primary" id="btnPickPdf">📄 Загрузить протокол (PDF)</button>
+      <span class="hint" id="protoStatus"></span>
+    </div>
+
+    <div id="protoEmpty" class="empty">
+      <div class="big">📄</div>
+      <div>Протокол ещё не загружен.<br>Загрузите PDF со стартовым протоколом соревнований — номера, участники, время старта и интервал.</div>
+    </div>
+
+    <div id="protoReview" style="display:none;">
+      <div class="proto-header">
+        <div class="proto-title" id="protoTitle"></div>
+        <div class="proto-date" id="protoDate"></div>
+      </div>
+      <div class="hint" style="margin-bottom:10px;">Для каждой группы укажите реальное время старта (в протоколе оно ещё не проставлено) — время старта каждого участника посчитается автоматически по интервалу из протокола.</div>
+      <div id="protoGroups"></div>
+      <div class="proto-actions">
+        <button class="btn" id="btnDiscardProto">Отменить</button>
+        <button class="btn primary" id="btnCreateSession">Создать сессию →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-leaderboard">
+    <div id="lbEmpty" class="empty">
+      <div class="big">🏆</div>
+      <div>Сессия по протоколу ещё не создана.<br>Загрузите протокол на вкладке «Протокол» и нажмите «Создать сессию».</div>
+    </div>
+    <div id="lbContent" style="display:none;">
+      <div class="lb-toolbar">
+        <div class="hint" id="lbSessionInfo"></div>
+        <button class="btn" id="btnEndSession">Завершить сессию</button>
+      </div>
+      <div id="lbGroups"></div>
+    </div>
+  </div>
+
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -344,10 +442,11 @@
         var s = JSON.parse(raw);
         s.athletes = s.athletes || [];
         s.athletes.forEach(function(a){ a.attempts = a.attempts || []; });
+        s.protocolSession = s.protocolSession || null;
         return s;
       }
     }catch(e){}
-    return { athletes: [], nextId: 1 };
+    return { athletes: [], nextId: 1, protocolSession: null };
   }
 
   var saveTimer = null;
@@ -375,6 +474,19 @@
     var m = Math.floor(totalSec / 60);
     if(m > 0) return pad(m,2)+":"+pad(s,2)+"."+pad(cs,2);
     return pad(s,2)+"."+pad(cs,2);
+  }
+
+  function parseDurToMs(str){
+    if(!str) return null;
+    var parts = String(str).trim().replace(",",".").split(":");
+    if(!parts.length || parts.some(function(p){ return p===""; })) return null;
+    var nums = parts.map(Number);
+    if(nums.some(isNaN)) return null;
+    var h=0,m=0,s=0;
+    if(nums.length===1) s=nums[0];
+    else if(nums.length===2){ m=nums[0]; s=nums[1]; }
+    else { h=nums[0]; m=nums[1]; s=nums[2]; }
+    return Math.round((h*3600+m*60+s)*1000);
   }
 
   function fmtClock(ms){
@@ -513,7 +625,7 @@
     var thAction = document.createElement("th");
     thAction.className = "col-action";
     thAction.rowSpan = 2;
-    thAction.textContent = "";
+    thAction.textContent = "Управление";
     htr1.appendChild(thAction);
     heatsHead.innerHTML = "";
     heatsHead.appendChild(htr1);
@@ -579,16 +691,7 @@
           } else {
             tdStart.classList.add("running-start");
             tdFinish.classList.add("running-finish");
-            var live = document.createElement("div");
-            live.className = "cell-live";
-            live.id = "live-" + a.id;
-            live.textContent = fmtDur(Date.now() - attempt.start);
-            var finishBtn = document.createElement("button");
-            finishBtn.className = "cell-btn btn-heat-finish";
-            finishBtn.textContent = "■ Финиш";
-            finishBtn.onclick = function(){ finishHeat(a.id); };
-            tdFinish.appendChild(live);
-            tdFinish.appendChild(finishBtn);
+            tdFinish.innerHTML = "<span class='cell-dash'>идёт…</span>";
           }
         } else {
           tdStart.innerHTML = "<span class='cell-dash'>—</span>";
@@ -601,10 +704,22 @@
 
       var tdAction = document.createElement("td");
       tdAction.className = "col-action";
-      if(!running){
+      if(running){
+        var lastAttempt = a.attempts[a.attempts.length-1];
+        var live = document.createElement("div");
+        live.className = "cell-live";
+        live.id = "live-" + a.id;
+        live.textContent = fmtDur(Date.now() - lastAttempt.start);
+        var finishBtn = document.createElement("button");
+        finishBtn.className = "cell-btn btn-heat-finish";
+        finishBtn.textContent = "■ Финиш";
+        finishBtn.onclick = function(){ finishHeat(a.id); };
+        tdAction.appendChild(live);
+        tdAction.appendChild(finishBtn);
+      } else {
         var startBtn = document.createElement("button");
-        startBtn.className = "action-btn";
-        startBtn.innerHTML = "&#9654;";
+        startBtn.className = "cell-btn btn-heat-start";
+        startBtn.textContent = "▶ Старт";
         startBtn.title = "Начать заезд " + (a.attempts.length + 1);
         startBtn.onclick = function(){ startHeat(a.id); };
         tdAction.appendChild(startBtn);
@@ -659,18 +774,27 @@
   /* ---------- modal ---------- */
   var modalBackdrop = document.getElementById("modalBackdrop");
   var modalText = document.getElementById("modalText");
+  var modalCancelBtn = document.getElementById("modalCancel");
+  var modalOkBtn = document.getElementById("modalOk");
   var modalOkHandler = null;
-  function showModal(text, onOk){
+  function showModal(text, onOk, opts){
+    opts = opts || {};
     modalText.textContent = text;
-    modalOkHandler = onOk;
+    modalOkHandler = onOk || function(){};
+    modalCancelBtn.style.display = opts.hideCancel ? "none" : "";
+    modalOkBtn.textContent = opts.okLabel || "Удалить";
+    modalOkBtn.style.background = opts.okStyle === "neutral" ? "var(--blue)" : "var(--red)";
     modalBackdrop.classList.add("show");
+  }
+  function showAlert(text){
+    showModal(text, function(){}, { hideCancel:true, okLabel:"Понятно", okStyle:"neutral" });
   }
   function hideModal(){
     modalBackdrop.classList.remove("show");
     modalOkHandler = null;
   }
-  document.getElementById("modalCancel").onclick = hideModal;
-  document.getElementById("modalOk").onclick = function(){
+  modalCancelBtn.onclick = hideModal;
+  modalOkBtn.onclick = function(){
     if(modalOkHandler) modalOkHandler();
     hideModal();
   };
@@ -678,14 +802,16 @@
 
   /* ---------- tabs ---------- */
   var tabs = document.querySelectorAll(".tab");
+  function switchTab(view){
+    tabs.forEach(function(t){ t.classList.toggle("active", t.dataset.view === view); });
+    document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+    document.getElementById("view-" + view).classList.add("active");
+    if(view === "history") renderHistory();
+    if(view === "protocol") renderProtocolReview();
+    if(view === "leaderboard") renderLeaderboard();
+  }
   tabs.forEach(function(tab){
-    tab.onclick = function(){
-      tabs.forEach(function(t){ t.classList.remove("active"); });
-      tab.classList.add("active");
-      document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
-      document.getElementById("view-" + tab.dataset.view).classList.add("active");
-      if(tab.dataset.view === "history") renderHistory();
-    };
+    tab.onclick = function(){ switchTab(tab.dataset.view); };
   });
 
   /* ---------- history view (flat, chronological, exportable) ---------- */
@@ -778,9 +904,662 @@
     URL.revokeObjectURL(url);
   };
 
+  /* ---------- protocol PDF parsing ---------- */
+  if(window.pdfjsLib){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+
+  var RU_MONTHS = { "января":0,"февраля":1,"марта":2,"апреля":3,"мая":4,"июня":5,"июля":6,"августа":7,"сентября":8,"октября":9,"ноября":10,"декабря":11 };
+  function parseRuDate(text){
+    var m = text.match(/(\d{1,2})\s+([а-яё]+)\s+(\d{4})/i);
+    if(!m) return null;
+    var month = RU_MONTHS[m[2].toLowerCase()];
+    if(month === undefined) return null;
+    return { year:+m[3], month:month, day:+m[1] };
+  }
+
+  // Read every text run on every page with its (x,y) position, then group runs
+  // that share a baseline into visual "lines" — this mirrors how the protocol
+  // was laid out as a table, without needing to know column pixel positions in advance.
+  function linesFromItemGroups(rawPages, yTolerance){
+    var lines = [];
+    rawPages.forEach(function(pageItems, pIdx){
+      var items = pageItems.slice();
+      items.sort(function(a,b){ return (b.y - a.y) || (a.x - b.x); });
+      var curLine = null, curY = null;
+      items.forEach(function(it){
+        if(curLine === null || Math.abs(it.y - curY) > yTolerance){
+          curLine = { page:pIdx+1, y:it.y, items:[] };
+          lines.push(curLine);
+          curY = it.y;
+        }
+        curLine.items.push(it);
+      });
+    });
+    lines.forEach(function(line){
+      line.items.sort(function(a,b){ return a.x - b.x; });
+      var text = "", prevRight = null;
+      line.items.forEach(function(it){
+        if(prevRight !== null && it.x - prevRight > 1.5) text += " ";
+        text += it.str;
+        prevRight = it.x + it.width;
+      });
+      line.text = text.replace(/\s+/g," ").trim();
+    });
+    return lines;
+  }
+
+  async function extractLinesFromTextLayer(pdf){
+    var rawPages = [];
+    for(var p=1; p<=pdf.numPages; p++){
+      var page = await pdf.getPage(p);
+      var content = await page.getTextContent();
+      rawPages.push(content.items
+        .filter(function(it){ return it.str && it.str.trim().length; })
+        .map(function(it){ return { x: it.transform[4], y: it.transform[5], str: it.str, width: it.width }; }));
+    }
+    return { lines: linesFromItemGroups(rawPages, 2.5), totalItems: rawPages.reduce(function(s,a){ return s+a.length; },0) };
+  }
+
+  // Many protocol exports turn out to be a single flattened page image rather
+  // than real vector content (no text layer at all). page.render() draws through
+  // pdf.js's normal compositing path, which some browsers pause while the tab
+  // isn't the foreground/visible one; grabbing the decoded image object directly
+  // and blitting it ourselves sidesteps that and is also just faster.
+  async function pageToCanvas(page, scale){
+    var opList = await page.getOperatorList();
+    var imgName = null;
+    for(var i=0; i<opList.argsArray.length; i++){
+      var a = opList.argsArray[i];
+      if(a && typeof a[0] === "string" && a[0].indexOf("img_") === 0){ imgName = a[0]; break; }
+    }
+    if(imgName){
+      var img = await new Promise(function(resolve){ page.objs.get(imgName, resolve); });
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      var ctx = canvas.getContext("2d");
+      if(img.bitmap){
+        ctx.drawImage(img.bitmap, 0, 0, canvas.width, canvas.height);
+        return canvas;
+      }
+    }
+    // not a flat single-image page (real vector/text content) — fall back to normal rendering
+    var viewport = page.getViewport({ scale: scale });
+    var canvas2 = document.createElement("canvas");
+    canvas2.width = viewport.width;
+    canvas2.height = viewport.height;
+    await page.render({ canvasContext: canvas2.getContext("2d"), viewport: viewport }).promise;
+    return canvas2;
+  }
+
+  // Fallback for protocols exported as flat page images (no text layer at all,
+  // which is common — many timing-software PDF exports are effectively scans):
+  // OCR each page, then feed the recognized words through the same y/x
+  // line-grouping used for real text so the rest of the table parser doesn't
+  // need to know which path produced the data.
+  async function extractLinesViaOCR(pdf, onProgress){
+    var worker = await Tesseract.createWorker("rus", 1, {
+      logger: function(m){
+        if(onProgress && m.status === "recognizing text"){
+          onProgress("Распознаю текст (OCR)… " + Math.round((m.progress||0)*100) + "%");
+        }
+      }
+    });
+    var rawPages = [];
+    try{
+      for(var p=1; p<=pdf.numPages; p++){
+        if(onProgress) onProgress("Распознаю текст (OCR)… страница " + p + " из " + pdf.numPages);
+        var page = await pdf.getPage(p);
+        var canvas = await pageToCanvas(page, 2.5);
+        var result = await worker.recognize(canvas);
+        var words = (result.data.words || []).filter(function(w){ return w.text && w.text.trim().length; });
+        rawPages.push(words.map(function(w){
+          return { x: w.bbox.x0, y: -((w.bbox.y0 + w.bbox.y1) / 2), str: w.text, width: (w.bbox.x1 - w.bbox.x0) };
+        }));
+      }
+    } finally {
+      await worker.terminate();
+    }
+    // OCR word boxes are noisier than a real text layer, use a wider row tolerance.
+    return { lines: linesFromItemGroups(rawPages, 7), totalItems: rawPages.reduce(function(s,a){ return s+a.length; },0) };
+  }
+
+  async function extractLines(file, onProgress){
+    var buf = await file.arrayBuffer();
+    var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    var textResult = await extractLinesFromTextLayer(pdf);
+    if(textResult.totalItems > 20) return { lines: textResult.lines, ocr:false };
+    if(!window.Tesseract) throw new Error("в этом PDF нет текстового слоя (похоже на скан), а модуль OCR не загрузился — проверьте интернет-соединение");
+    var ocrResult = await extractLinesViaOCR(pdf, onProgress);
+    return { lines: ocrResult.lines, ocr:true };
+  }
+
+  // Column layout (№ п.п | № участника | Фамилия Имя | Год рождения | ДСО... | Звание | Время старта)
+  // is detected per table from its own header row(s), so wrapped multi-line
+  // headers and slight positional drift between exports don't break parsing.
+  function detectHeaderColumns(lines, i){
+    var found = { col1:null, col2:null, col3:null, col4:null, col5:null, col6:null, col7:null };
+    var used = 0;
+    while(i < lines.length && used < 5){
+      var ln = lines[i];
+      var isHeader = false;
+      var noItems = ln.items.filter(function(it){ return it.str.trim() === "№"; });
+      if(noItems.length){
+        isHeader = true;
+        if(noItems.length >= 2){
+          if(found.col1===null) found.col1 = noItems[0].x;
+          if(found.col2===null) found.col2 = noItems[1].x;
+        } else if(found.col1===null){
+          found.col1 = noItems[0].x;
+        }
+      }
+      ln.items.forEach(function(it){
+        var s = it.str;
+        if(/п\.п/.test(s)){ isHeader=true; if(found.col1===null) found.col1=it.x; }
+        if(/учас|ника/.test(s)){ isHeader=true; if(found.col2===null) found.col2=it.x; }
+        if(/Фамилия/.test(s)){ isHeader=true; found.col3=it.x; }
+        if(/^Год$|рожде|^ния$/.test(s)){ isHeader=true; if(found.col4===null) found.col4=it.x; }
+        if(/ДСО|республика|^город$/.test(s)){ isHeader=true; if(found.col5===null) found.col5=it.x; }
+        if(/^Зва$|^ние,?$|разряд/.test(s)){ isHeader=true; if(found.col6===null) found.col6=it.x; }
+        if(/Время|старта/.test(s)){ isHeader=true; if(found.col7===null) found.col7=it.x; }
+      });
+      if(isHeader){ i++; used++; } else break;
+    }
+    var cols = [found.col1, found.col2, found.col3, found.col4, found.col5, found.col6, found.col7];
+    return { boundaries: cols.every(function(v){ return v!==null; }) ? cols : null, nextIndex: i };
+  }
+
+  function bucketLineIntoColumns(line, boundaries){
+    var cellItems = [[],[],[],[],[],[],[]];
+    line.items.forEach(function(it){
+      var colIdx = 6;
+      for(var b=boundaries.length-1; b>=0; b--){
+        if(it.x >= boundaries[b] - 4){ colIdx = b; break; }
+      }
+      cellItems[colIdx].push(it);
+    });
+    return cellItems.map(function(arr){
+      arr.sort(function(a,b){ return a.x - b.x; });
+      return arr.map(function(it){ return it.str; }).join(" ").replace(/\s+/g," ").trim();
+    });
+  }
+
+  function parseProtocol(lines){
+    var groups = [];
+    var i = 0;
+    var titleLines = [];
+    while(i < lines.length && !/Группа участников/.test(lines[i].text)){
+      titleLines.push(lines[i].text);
+      i++;
+    }
+    var dateLine = titleLines.filter(function(t){ return /\d{4}\s*года/i.test(t); })[0] || "";
+    var eventTitle = titleLines.filter(function(t){ return t && t !== dateLine; }).join(" ").trim();
+
+    var lastBoundaries = null;
+
+    while(i < lines.length){
+      var mGroup = lines[i].text.match(/Группа участников:\s*(.+)/);
+      if(!mGroup){ i++; continue; }
+      var label = mGroup[1].trim();
+      i++;
+
+      var startRaw = "", distance = "", style = "";
+      while(i < lines.length && !/Фамилия|п\.п/.test(lines[i].text)){
+        var t = lines[i].text;
+        var mStart = t.match(/Начало старта:\s*(\S+)/);
+        var mDist = t.match(/Дистанция:\s*(\S+)/);
+        var mStyle = t.match(/Стиль:\s*(.+)$/);
+        if(mStart) startRaw = mStart[1];
+        if(mDist) distance = mDist[1];
+        if(mStyle) style = mStyle[1].trim();
+        if(!mStart && !mDist && !mStyle) break;
+        i++;
+      }
+
+      var headerResult = detectHeaderColumns(lines, i);
+      i = headerResult.nextIndex;
+      var boundaries = headerResult.boundaries || lastBoundaries;
+      if(headerResult.boundaries) lastBoundaries = headerResult.boundaries;
+
+      var athletes = [];
+      var curRow = null;
+      if(boundaries){
+        while(i < lines.length && !/Группа участников:/.test(lines[i].text) && !/^Стартер|^Секретарь|^Гл\.\s*судья|^Гл\.\s*Секретарь|^Стартовало/i.test(lines[i].text)){
+          var cells = bucketLineIntoColumns(lines[i], boundaries);
+          if(/^\d{1,3}$/.test(cells[0])){
+            curRow = { no:cells[0], bib:cells[1], name:cells[2], year:cells[3], club:cells[4], rank:cells[5], timeRaw:cells[6] };
+            athletes.push(curRow);
+          } else if(curRow){
+            if(cells[4]) curRow.club = (curRow.club + " " + cells[4]).trim();
+            if(cells[2]) curRow.name = (curRow.name + " " + cells[2]).trim();
+            if(cells[6] && !curRow.timeRaw) curRow.timeRaw = cells[6];
+          }
+          i++;
+        }
+      }
+
+      athletes.forEach(function(a){
+        var m = a.timeRaw && a.timeRaw.match(/(\d{1,2}):(\d{2}):(\d{2})[.,](\d)/);
+        a.offsetSec = m ? (+m[1])*3600 + (+m[2])*60 + (+m[3]) + (+m[4])/10 : null;
+      });
+
+      groups.push({
+        id: "g" + groups.length + "_" + Math.random().toString(36).slice(2,7),
+        label: label, distance: distance, style: style, startRaw: startRaw,
+        athletes: athletes.filter(function(a){ return a.offsetSec !== null && a.name; })
+      });
+    }
+
+    return { eventTitle: eventTitle, date: dateLine, groups: groups.filter(function(g){ return g.athletes.length > 0; }) };
+  }
+
+  /* ---------- protocol review UI ---------- */
+  var pendingProtocol = null;
+  var protoEmpty = document.getElementById("protoEmpty");
+  var protoReview = document.getElementById("protoReview");
+  var protoStatus = document.getElementById("protoStatus");
+
+  function setProtoStatus(msg){ protoStatus.textContent = msg || ""; }
+
+  function renderProtocolReview(){
+    if(!pendingProtocol){
+      protoEmpty.style.display = "block";
+      protoReview.style.display = "none";
+      return;
+    }
+    protoEmpty.style.display = "none";
+    protoReview.style.display = "block";
+    document.getElementById("protoTitle").textContent = pendingProtocol.eventTitle || "Протокол старта";
+    document.getElementById("protoDate").textContent = pendingProtocol.date || "";
+
+    var wrap = document.getElementById("protoGroups");
+    wrap.innerHTML = "";
+    if(pendingProtocol.ocr){
+      var ocrNote = document.createElement("div");
+      ocrNote.className = "hint";
+      ocrNote.style.cssText = "background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:14px;";
+      ocrNote.textContent = "⚠ Текст распознан через OCR (в PDF не было текстового слоя). Разверните «Показать участников» в каждой группе и сверьте номера/время со сканом.";
+      wrap.appendChild(ocrNote);
+    }
+    pendingProtocol.groups.forEach(function(g, idx){
+      var card = document.createElement("div");
+      card.className = "proto-group-card";
+
+      var head = document.createElement("div");
+      head.style.cssText = "display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;";
+
+      var info = document.createElement("div");
+      info.className = "proto-group-info";
+      var lbl = document.createElement("div");
+      lbl.className = "proto-group-label";
+      lbl.textContent = g.label;
+      var meta = document.createElement("div");
+      meta.className = "proto-group-meta";
+      meta.textContent = [g.distance, g.style, g.athletes.length + " участников"].filter(Boolean).join(" · ");
+      info.appendChild(lbl);
+      info.appendChild(meta);
+
+      var startWrap = document.createElement("div");
+      startWrap.className = "proto-group-start";
+      var label = document.createElement("label");
+      label.textContent = "Старт группы:";
+      label.setAttribute("for", "gstart-" + idx);
+      var input = document.createElement("input");
+      input.type = "time";
+      input.step = "1";
+      input.id = "gstart-" + idx;
+      input.dataset.groupIdx = idx;
+      var suggested = /^\d{1,2}:\d{2}(:\d{2})?$/.test(g.startRaw) ? g.startRaw : "";
+      if(suggested && suggested.split(":").length === 2) suggested += ":00";
+      input.value = suggested;
+      startWrap.appendChild(label);
+      startWrap.appendChild(input);
+
+      head.appendChild(info);
+      head.appendChild(startWrap);
+      card.appendChild(head);
+
+      var details = document.createElement("details");
+      details.style.cssText = "width:100%;margin-top:10px;";
+      details.open = !!pendingProtocol.ocr;
+      var summary = document.createElement("summary");
+      summary.style.cssText = "cursor:pointer;font-size:13px;color:var(--blue);font-weight:600;";
+      summary.textContent = "Показать / проверить участников (" + g.athletes.length + ")";
+      details.appendChild(summary);
+
+      var cellInputCss = "width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:6px;padding:5px 6px;font-family:inherit;font-size:13px;background:transparent;color:var(--text);";
+      var cellInputMono = cellInputCss + "font-family:ui-monospace,monospace;";
+
+      var previewTable = document.createElement("table");
+      previewTable.style.cssText = "width:100%;border-collapse:collapse;margin-top:8px;";
+      var thead = document.createElement("thead");
+      thead.innerHTML = "<tr>" +
+        "<th style='text-align:left;padding:4px 6px;font-size:11px;color:var(--muted);text-transform:uppercase;'>№</th>" +
+        "<th style='text-align:left;padding:4px 6px;font-size:11px;color:var(--muted);text-transform:uppercase;'>Фамилия Имя</th>" +
+        "<th style='text-align:left;padding:4px 6px;font-size:11px;color:var(--muted);text-transform:uppercase;'>Клуб</th>" +
+        "<th style='text-align:left;padding:4px 6px;font-size:11px;color:var(--muted);text-transform:uppercase;'>Интервал</th>" +
+        "<th></th></tr>";
+      previewTable.appendChild(thead);
+      var tbody = document.createElement("tbody");
+      g.athletes.forEach(function(a, aidx){
+        var tr = document.createElement("tr");
+        tr.dataset.groupIdx = idx;
+        tr.dataset.athleteIdx = aidx;
+
+        var tdBib = document.createElement("td");
+        var bibInput = document.createElement("input");
+        bibInput.className = "proto-cell-input";
+        bibInput.style.cssText = cellInputMono;
+        bibInput.value = a.bib;
+        bibInput.dataset.field = "bib";
+        tdBib.appendChild(bibInput);
+
+        var tdName = document.createElement("td");
+        var nameInput = document.createElement("input");
+        nameInput.className = "proto-cell-input";
+        nameInput.style.cssText = cellInputCss + "font-weight:600;";
+        nameInput.value = a.name;
+        nameInput.dataset.field = "name";
+        tdName.appendChild(nameInput);
+
+        var tdClub = document.createElement("td");
+        var clubInput = document.createElement("input");
+        clubInput.className = "proto-cell-input";
+        clubInput.style.cssText = cellInputCss + "color:var(--muted);";
+        clubInput.value = a.club || "";
+        clubInput.dataset.field = "club";
+        tdClub.appendChild(clubInput);
+
+        var tdOffset = document.createElement("td");
+        var offsetInput = document.createElement("input");
+        offsetInput.className = "proto-cell-input";
+        offsetInput.style.cssText = cellInputMono + "width:90px;";
+        offsetInput.value = fmtDur(a.offsetSec*1000);
+        offsetInput.dataset.field = "offset";
+        tdOffset.appendChild(offsetInput);
+
+        var tdDel = document.createElement("td");
+        var delRowBtn = document.createElement("button");
+        delRowBtn.className = "row-icon-btn";
+        delRowBtn.innerHTML = "&#10005;";
+        delRowBtn.title = "Убрать участника (не стартовал / ошибка распознавания)";
+        delRowBtn.onclick = function(){
+          g.athletes.splice(aidx, 1);
+          renderProtocolReview();
+        };
+        tdDel.appendChild(delRowBtn);
+
+        [tdBib,tdName,tdClub,tdOffset,tdDel].forEach(function(td){
+          td.style.cssText += "padding:3px 4px;border-bottom:1px solid var(--border);";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      previewTable.appendChild(tbody);
+      details.appendChild(previewTable);
+      card.appendChild(details);
+
+      wrap.appendChild(card);
+    });
+  }
+
+  document.getElementById("btnPickPdf").onclick = function(){
+    document.getElementById("protoFile").click();
+  };
+  document.getElementById("protoFile").onchange = function(e){
+    var file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if(!file) return;
+    handleProtocolFile(file);
+  };
+
+  async function handleProtocolFile(file){
+    setProtoStatus("Читаю PDF…");
+    try{
+      if(!window.pdfjsLib) throw new Error("библиотека чтения PDF не загрузилась (нет интернета?)");
+      var extracted = await extractLines(file, setProtoStatus);
+      setProtoStatus(extracted.ocr ? "Разбираю распознанный текст…" : "Разбираю протокол…");
+      var parsed = parseProtocol(extracted.lines);
+      parsed.ocr = extracted.ocr;
+      if(!parsed.groups.length) throw new Error("не удалось найти таблицы с участниками в этом PDF");
+      pendingProtocol = parsed;
+      setProtoStatus("");
+      renderProtocolReview();
+      var totalAthletes = parsed.groups.reduce(function(s,g){ return s + g.athletes.length; }, 0);
+      toast("Протокол прочитан: " + parsed.groups.length + " групп, " + totalAthletes + " участников");
+      if(extracted.ocr){
+        showAlert("В этом PDF нет текстового слоя, данные распознаны через OCR по картинке страницы — цифры (особенно время) могли распознаться с ошибками. Обязательно сверьте список участников и время старта групп со скана перед созданием сессии.");
+      }
+    } catch(err){
+      setProtoStatus("");
+      showAlert("Не удалось прочитать протокол: " + (err && err.message ? err.message : err) + ". Проверьте, что это PDF со стартовым протоколом в табличном формате.");
+    }
+  }
+
+  document.getElementById("btnDiscardProto").onclick = function(){
+    pendingProtocol = null;
+    renderProtocolReview();
+  };
+
+  document.getElementById("btnCreateSession").onclick = function(){
+    if(!pendingProtocol) return;
+
+    // pull any edits made in the per-athlete review table back into the model
+    var badRows = [];
+    document.querySelectorAll("#protoGroups tbody tr[data-group-idx]").forEach(function(tr){
+      var gidx = +tr.dataset.groupIdx, aidx = +tr.dataset.athleteIdx;
+      var a = pendingProtocol.groups[gidx].athletes[aidx];
+      if(!a) return;
+      tr.querySelectorAll(".proto-cell-input").forEach(function(inp){
+        if(inp.dataset.field === "offset"){
+          var ms = parseDurToMs(inp.value);
+          if(ms === null){ badRows.push((a.name||a.bib) + " (" + pendingProtocol.groups[gidx].label + ")"); }
+          else a.offsetSec = ms/1000;
+        } else {
+          a[inp.dataset.field] = inp.value.trim();
+        }
+      });
+    });
+    if(badRows.length){
+      showAlert("Не получается разобрать интервал старта у: " + badRows.join(", ") + ". Формат — мм:сс.д или чч:мм:сс.д.");
+      return;
+    }
+
+    var inputs = document.querySelectorAll("#protoGroups input[type=time]");
+    var missing = [];
+    var groupStarts = [];
+    inputs.forEach(function(inp){
+      var idx = +inp.dataset.groupIdx;
+      if(!inp.value) missing.push(pendingProtocol.groups[idx].label);
+      groupStarts[idx] = inp.value;
+    });
+    if(missing.length){
+      showAlert("Укажите время старта для всех групп. Не заполнено: " + missing.join(", "));
+      return;
+    }
+
+    var dateInfo = parseRuDate(pendingProtocol.date || "");
+    if(!dateInfo){
+      var now = new Date();
+      dateInfo = { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
+    }
+
+    var groups = pendingProtocol.groups.map(function(g, idx){
+      var parts = groupStarts[idx].split(":").map(Number);
+      var startAtMs = new Date(dateInfo.year, dateInfo.month, dateInfo.day, parts[0], parts[1], parts[2]||0, 0).getTime();
+      return {
+        id: g.id, label: g.label, distance: g.distance, style: g.style, startAtMs: startAtMs,
+        athletes: g.athletes.map(function(a){
+          return {
+            id: "pa" + Math.random().toString(36).slice(2,9),
+            bib: a.bib, name: a.name, club: a.club, rank: a.rank,
+            startAt: startAtMs + Math.round(a.offsetSec*1000),
+            markAt: null
+          };
+        })
+      };
+    });
+
+    state.protocolSession = { eventTitle: pendingProtocol.eventTitle, date: pendingProtocol.date, groups: groups, createdAt: Date.now() };
+    pendingProtocol = null;
+    persist();
+    renderProtocolReview();
+    switchTab("leaderboard");
+    toast("Сессия создана: " + groups.length + " групп");
+  };
+
+  /* ---------- leaderboard ---------- */
+  var lbEmpty = document.getElementById("lbEmpty");
+  var lbContent = document.getElementById("lbContent");
+  var lbGroups = document.getElementById("lbGroups");
+  var lbSessionInfo = document.getElementById("lbSessionInfo");
+
+  function findProtocolAthlete(groupId, athleteId){
+    var session = state.protocolSession;
+    if(!session) return null;
+    for(var gi=0; gi<session.groups.length; gi++){
+      if(session.groups[gi].id !== groupId) continue;
+      var g = session.groups[gi];
+      for(var ai=0; ai<g.athletes.length; ai++){
+        if(g.athletes[ai].id === athleteId) return { group:g, athlete:g.athletes[ai] };
+      }
+    }
+    return null;
+  }
+
+  function markAthlete(groupId, athleteId){
+    var found = findProtocolAthlete(groupId, athleteId);
+    if(!found) return;
+    found.athlete.markAt = Date.now();
+    persist();
+    renderLeaderboard();
+    toast(found.athlete.name + ": финиш зафиксирован");
+  }
+
+  function unmarkAthlete(groupId, athleteId){
+    var found = findProtocolAthlete(groupId, athleteId);
+    if(!found) return;
+    found.athlete.markAt = null;
+    persist();
+    renderLeaderboard();
+  }
+
+  function buildLeaderboardGroup(g){
+    var now = Date.now();
+    var finished = [], pending = [];
+    g.athletes.forEach(function(a){ (a.markAt !== null ? finished : pending).push(a); });
+    finished.sort(function(x,y){ return (x.markAt-x.startAt) - (y.markAt-y.startAt); });
+    pending.sort(function(x,y){ return x.startAt - y.startAt; });
+    var leaderElapsed = finished.length ? (finished[0].markAt - finished[0].startAt) : null;
+
+    var section = document.createElement("div");
+    section.className = "lb-group";
+
+    var h = document.createElement("h3");
+    var metaStr = [g.distance, g.style].filter(Boolean).join(" · ") +
+      " · старт " + fmtClock(g.startAtMs) + " · " + finished.length + "/" + g.athletes.length + " финишировали";
+    h.innerHTML = escapeHtml(g.label) + " <span class='lb-group-meta'>" + escapeHtml(metaStr) + "</span>";
+    section.appendChild(h);
+
+    var table = document.createElement("table");
+    table.className = "lb-table";
+    table.innerHTML = "<thead><tr>" +
+      "<th class='lb-th'>#</th><th class='lb-th'>№</th><th class='lb-th' style='text-align:left;'>Спортсмен</th>" +
+      "<th class='lb-th'>Старт</th><th class='lb-th'>Результат</th><th class='lb-th'>Отставание</th><th class='lb-th'></th>" +
+      "</tr></thead>";
+    var tbody = document.createElement("tbody");
+
+    finished.forEach(function(a, idx){
+      var elapsed = a.markAt - a.startAt;
+      var gap = elapsed - leaderElapsed;
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td class='lb-place'>" + (idx+1) + "</td>" +
+        "<td class='lb-bib'>" + escapeHtml(a.bib) + "</td>" +
+        "<td class='lb-name'>" + escapeHtml(a.name) + "<div class='hist-count'>" + escapeHtml(a.club||"") + "</div></td>" +
+        "<td class='cell-value'>" + fmtClock(a.startAt) + "</td>" +
+        "<td class='cell-dur' style='font-size:18px;'>" + fmtDur(elapsed) + "</td>" +
+        "<td class='lb-gap " + (gap===0?"leader":"") + "'>" + (gap===0? "Лидер" : "+"+fmtDur(gap)) + "</td>";
+      var tdBtn = document.createElement("td");
+      var undoBtn = document.createElement("button");
+      undoBtn.className = "row-icon-btn";
+      undoBtn.innerHTML = "&#8630;";
+      undoBtn.title = "Отменить отметку";
+      undoBtn.onclick = function(){ unmarkAthlete(g.id, a.id); };
+      tdBtn.appendChild(undoBtn);
+      tr.appendChild(tdBtn);
+      tbody.appendChild(tr);
+    });
+
+    pending.forEach(function(a){
+      var started = now >= a.startAt;
+      var tr = document.createElement("tr");
+      var statusHtml = started
+        ? "<span class='lb-status-running' id='lb-live-" + a.id + "'>" + fmtDur(now - a.startAt) + "</span>"
+        : "<span class='lb-status-pending'>старт через " + fmtDur(a.startAt - now) + "</span>";
+      tr.innerHTML =
+        "<td class='lb-place'>—</td>" +
+        "<td class='lb-bib'>" + escapeHtml(a.bib) + "</td>" +
+        "<td class='lb-name'>" + escapeHtml(a.name) + "<div class='hist-count'>" + escapeHtml(a.club||"") + "</div></td>" +
+        "<td class='cell-value'>" + fmtClock(a.startAt) + "</td>" +
+        "<td>" + statusHtml + "</td>" +
+        "<td class='lb-status-pending'>—</td>";
+      var tdBtn = document.createElement("td");
+      if(started){
+        var markBtn = document.createElement("button");
+        markBtn.className = "lb-mark-btn";
+        markBtn.textContent = "Финиш";
+        markBtn.onclick = function(){ markAthlete(g.id, a.id); };
+        tdBtn.appendChild(markBtn);
+      }
+      tr.appendChild(tdBtn);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    section.appendChild(table);
+    return section;
+  }
+
+  function renderLeaderboard(){
+    var session = state.protocolSession;
+    if(!session){
+      lbEmpty.style.display = "block";
+      lbContent.style.display = "none";
+      return;
+    }
+    lbEmpty.style.display = "none";
+    lbContent.style.display = "block";
+    lbSessionInfo.textContent = (session.eventTitle || "Протокол") + (session.date ? (" · " + session.date) : "");
+    lbGroups.innerHTML = "";
+    session.groups.forEach(function(g){ lbGroups.appendChild(buildLeaderboardGroup(g)); });
+  }
+
+  document.getElementById("btnEndSession").onclick = function(){
+    if(!state.protocolSession) return;
+    showModal("Завершить текущую сессию по протоколу? Все отметки и лидерборд будут удалены.", function(){
+      state.protocolSession = null;
+      persist();
+      renderLeaderboard();
+      toast("Сессия завершена");
+    });
+  };
+
+  // full re-render once a second while the leaderboard tab is open, so
+  // athletes cross from "ещё не стартовал" to "в гонке" (with a Финиш button)
+  // automatically as their scheduled start time passes.
+  setInterval(function(){
+    if(state.protocolSession && document.getElementById("view-leaderboard").classList.contains("active")){
+      renderLeaderboard();
+    }
+  }, 1000);
+
   /* ---------- init ---------- */
   renderTable();
   renderHistory();
+  renderProtocolReview();
+  renderLeaderboard();
 
   // prevent accidental pull-to-refresh / double-tap zoom on tablets
   document.addEventListener("touchmove", function(e){
