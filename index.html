@@ -118,6 +118,16 @@
   .group-members{font-size:12px;color:var(--muted);margin-top:2px;}
   .group-card-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
   .group-card-actions .btn{font-size:13px;padding:9px 14px;}
+  .group-running-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .group-running-chip{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);
+    border-radius:10px;padding:6px 8px 6px 10px;
+  }
+  .grc-name{font-size:13px;font-weight:700;}
+  .grc-time{font-family:ui-monospace,monospace;font-weight:800;font-size:14px;color:var(--green);}
+  .grc-finish{background:var(--red);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;}
+  .grc-finish:hover{background:var(--red-d);}
 
   .group-builder{
     background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
@@ -136,12 +146,31 @@
   .group-check-item:last-child{border-bottom:none;}
   .group-check-item input{width:18px;height:18px;flex-shrink:0;}
 
+  .roster-section{margin-bottom:16px;}
+  .roster-section-title{
+    font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.4px;margin-bottom:6px;padding:0 2px;
+  }
+  .roster-row{
+    display:flex;align-items:center;gap:10px;padding:9px 10px;
+    border-bottom:1px solid var(--border);font-size:14px;font-weight:600;
+  }
+  .roster-row:last-child{border-bottom:none;}
+  .roster-row input[type=checkbox]{width:18px;height:18px;flex-shrink:0;cursor:pointer;}
+  .roster-row .roster-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+  .roster-row.inactive .roster-name{color:var(--muted);font-weight:500;}
+  .roster-del{background:transparent;color:var(--muted);width:30px;height:30px;border-radius:8px;flex-shrink:0;font-size:13px;}
+  .roster-del:hover{background:rgba(220,38,38,0.12);color:var(--red);}
+  .roster-list-box{border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+
   /* ---- Athlete list (start/finish + heat history) ---- */
   .table-wrap{
     background:var(--panel);
     border:1px solid var(--border);
     border-radius:var(--radius);
-    overflow:hidden;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
     box-shadow:0 1px 3px rgba(22,28,44,0.06);
     max-width:100%;
   }
@@ -190,6 +219,13 @@
   .ath-name{
     font-size:15px;font-weight:700;flex:1;min-width:0;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    cursor:pointer;border-radius:6px;padding:2px 6px;margin:-2px -6px;
+  }
+  .ath-name:hover{background:var(--panel-2);}
+  .ath-name-input{
+    font-size:15px;font-weight:700;flex:1;min-width:0;font-family:inherit;
+    border:1px solid var(--blue);border-radius:6px;padding:2px 6px;
+    background:var(--panel);color:var(--text);
   }
   .ath-run{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
   .ath-heats{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;padding:3px 0;}
@@ -222,6 +258,7 @@
   .hist-results{
     display:flex;align-items:center;gap:8px;
     overflow-x:auto;white-space:nowrap;padding-bottom:2px;
+    -webkit-overflow-scrolling:touch;max-width:100%;
   }
   .hist-chip{
     display:inline-flex;align-items:baseline;gap:6px;flex-shrink:0;
@@ -345,6 +382,7 @@
   <div class="header-actions">
     <button class="btn" id="btnShowAdd">+ Спортсмен</button>
     <button class="btn" id="btnShowGroup">+ Группа</button>
+    <button class="btn" id="btnShowRoster" title="Выбрать, кто тренируется сегодня">👥 Состав</button>
     <button class="btn" id="btnClearRun" title="Начать новую тренировку">Новая тренировка</button>
     <button class="btn" id="btnShowQr" title="Установить приложение на Android">📱 Установить</button>
   </div>
@@ -494,6 +532,15 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="rosterModal">
+  <div class="modal" style="max-width:480px;max-height:82vh;display:flex;flex-direction:column;">
+    <p style="margin:0 0 4px;font-weight:700;font-size:16px;">Состав на тренировку</p>
+    <p class="hint" style="margin:0 0 14px;">Отметьте, кто сегодня тренируется. Остальные останутся в списке спортсменов и группах, просто не будут показаны на вкладке «Секундомеры».</p>
+    <div id="rosterList" style="overflow-y:auto;flex:1;min-height:0;"></div>
+    <button class="btn primary" id="rosterCloseBtn" style="width:100%;margin-top:14px;">Готово</button>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="qrBackdrop">
   <div class="modal" style="text-align:center;max-width:320px;">
     <p style="margin:0 0 14px;font-weight:700;font-size:16px;">Установить на Android</p>
@@ -524,7 +571,10 @@
       if(raw){
         var s = JSON.parse(raw);
         s.athletes = s.athletes || [];
-        s.athletes.forEach(function(a){ a.attempts = a.attempts || []; });
+        s.athletes.forEach(function(a){
+          a.attempts = a.attempts || [];
+          if(a.active === undefined) a.active = true;
+        });
         s.protocolSession = s.protocolSession || null;
         s.archive = s.archive || [];
         s.groups = s.groups || [];
@@ -662,7 +712,7 @@
     names.forEach(function(n){
       n = n.trim();
       if(!n) return;
-      state.athletes.push({ id: uid(), name: n, attempts: [] });
+      state.athletes.push({ id: uid(), name: n, attempts: [], active: true });
       added++;
     });
     if(added){
@@ -670,6 +720,19 @@
       renderTable();
       toast(added === 1 ? "Спортсмен добавлен" : (added + " спортсменов добавлено"));
     }
+  }
+
+  function renameAthlete(id, newName){
+    var a = findAthlete(id);
+    if(!a) return;
+    newName = (newName || "").trim();
+    if(!newName || newName === a.name){ renderTable(); return; }
+    a.name = newName;
+    persist();
+    renderTable();
+    renderGroups();
+    renderHistory();
+    toast("Имя обновлено");
   }
 
   function removeAthlete(id){
@@ -682,13 +745,38 @@
     renderTable();
     renderHistory();
     renderGroups();
+    renderRosterModal();
   }
 
   function confirmDeleteAthlete(id, name){
-    showModal("Удалить спортсмена «" + name + "»? Все его заезды тоже удалятся.", function(){
+    showModal("Удалить спортсмена «" + name + "» насовсем? Он пропадёт из всех групп и истории.", function(){
       removeAthlete(id);
       toast("Удалено: " + name);
     });
+  }
+
+  // "Remove from today" is the everyday action from the Секундомеры list —
+  // it just hides the athlete from the active training (soft), keeping them
+  // (and their history) in the roster/groups so they can be brought back via
+  // "Состав" without retyping their name. Permanent removal lives in the
+  // roster panel only.
+  function activeAthletesList(){
+    return state.athletes.filter(function(a){ return a.active !== false; });
+  }
+  function setAthleteActive(id, active){
+    var a = findAthlete(id);
+    if(!a) return;
+    a.active = active;
+    persist();
+    renderTable();
+    renderGroups();
+    renderRosterModal();
+  }
+  function removeFromToday(id){
+    var a = findAthlete(id);
+    if(!a) return;
+    setAthleteActive(id, false);
+    toast(a.name + ": убран из сегодняшней тренировки");
   }
 
   /* ---------- start groups ---------- */
@@ -774,13 +862,46 @@
     return chip;
   }
 
-  function renderTable(){
-    emptyState.style.display = state.athletes.length === 0 ? "block" : "none";
-    tableWrap.style.display = state.athletes.length === 0 ? "none" : "block";
-    heatsList.innerHTML = "";
-    if(state.athletes.length === 0) return;
+  function startRenameAthlete(id, nameEl, container){
+    var a = findAthlete(id);
+    if(!a) return;
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "ath-name-input";
+    input.value = a.name;
+    input.maxLength = 60;
+    container.replaceChild(input, nameEl);
+    input.focus();
+    input.select();
+    var settled = false;
+    function commit(){
+      if(settled) return;
+      settled = true;
+      renameAthlete(id, input.value);
+    }
+    input.addEventListener("keydown", function(e){
+      if(e.key === "Enter"){ e.preventDefault(); commit(); }
+      else if(e.key === "Escape"){ settled = true; renderTable(); }
+    });
+    input.addEventListener("blur", commit);
+    input.addEventListener("click", function(e){ e.stopPropagation(); });
+  }
 
-    state.athletes.forEach(function(a){
+  function renderTable(){
+    var activeList = activeAthletesList();
+    emptyState.style.display = activeList.length === 0 ? "block" : "none";
+    tableWrap.style.display = activeList.length === 0 ? "none" : "block";
+    heatsList.innerHTML = "";
+    if(activeList.length === 0){
+      if(state.athletes.length === 0){
+        emptyState.innerHTML = "<div class='big'>🏃</div><div>Пока нет ни одного спортсмена.<br>Нажмите «+ Спортсмен», чтобы добавить список.</div>";
+      } else {
+        emptyState.innerHTML = "<div class='big'>🏃</div><div>Никто не отмечен на сегодня.<br>Откройте «👥 Состав», чтобы выбрать, кто тренируется.</div>";
+      }
+      return;
+    }
+
+    activeList.forEach(function(a){
       var running = isRunning(a);
       var row = document.createElement("div");
       row.className = "ath-row";
@@ -801,6 +922,8 @@
       var nameText = document.createElement("div");
       nameText.className = "ath-name";
       nameText.textContent = a.name;
+      nameText.title = "Нажмите, чтобы переименовать";
+      nameText.onclick = function(){ startRenameAthlete(a.id, nameText, main); };
 
       var undoBtn = document.createElement("button");
       undoBtn.className = "row-icon-btn";
@@ -812,8 +935,8 @@
       var delBtn = document.createElement("button");
       delBtn.className = "row-icon-btn";
       delBtn.innerHTML = "&#10005;";
-      delBtn.title = "Удалить спортсмена";
-      delBtn.onclick = function(){ confirmDeleteAthlete(a.id, a.name); };
+      delBtn.title = "Убрать из сегодняшней тренировки (останется в составе)";
+      delBtn.onclick = function(){ removeFromToday(a.id); };
 
       main.appendChild(drag);
       main.appendChild(dot);
@@ -926,7 +1049,7 @@
     if(!dragState) return;
     e.preventDefault();
     var y = e.clientY;
-    var curIdx = state.athletes.findIndex(function(a){ return a.id === dragState.id; });
+    var curIdx = activeAthletesList().findIndex(function(a){ return a.id === dragState.id; });
     if(curIdx === -1) return;
     var rows = heatsList.querySelectorAll(".ath-row");
     var targetIdx = 0;
@@ -950,10 +1073,23 @@
     if(rowEl) rowEl.classList.add("dragging");
   }
 
+  // from/to are indices within the visible (active-only) list; this splices
+  // the dragged athlete to the right spot in the real state.athletes array,
+  // which may also contain hidden inactive athletes interleaved.
   function moveAthlete(from, to){
-    var arr = state.athletes;
-    var item = arr.splice(from, 1)[0];
-    arr.splice(to, 0, item);
+    var activeList = activeAthletesList();
+    var item = activeList[from];
+    if(!item) return;
+    var realFrom = state.athletes.indexOf(item);
+    state.athletes.splice(realFrom, 1);
+    var remainingActive = activeAthletesList();
+    if(to >= remainingActive.length){
+      state.athletes.push(item);
+    } else {
+      var anchor = remainingActive[to];
+      var anchorIdx = state.athletes.indexOf(anchor);
+      state.athletes.splice(anchorIdx, 0, item);
+    }
   }
 
   function endDrag(){
@@ -977,6 +1113,8 @@
         if(el) el.textContent = elapsed;
         var chipEl = document.getElementById("chiplive-" + a.id);
         if(chipEl) chipEl.textContent = elapsed;
+        var groupEl = document.getElementById("grouplive-" + a.id);
+        if(groupEl) groupEl.textContent = elapsed;
       }
     });
   }, 50);
@@ -1062,7 +1200,8 @@
     groupsBar.style.display = state.groups.length ? "block" : "none";
     groupsList.innerHTML = "";
     state.groups.forEach(function(g){
-      var members = g.athleteIds.map(findAthlete).filter(Boolean);
+      var allMembers = g.athleteIds.map(findAthlete).filter(Boolean);
+      var members = allMembers.filter(function(a){ return a.active !== false; });
       var runningCount = members.filter(isRunning).length;
       var idleCount = members.length - runningCount;
 
@@ -1082,7 +1221,11 @@
       nameEl.appendChild(editBtn);
       var membersEl = document.createElement("div");
       membersEl.className = "group-members";
-      membersEl.textContent = members.map(function(a){ return a.name; }).join(", ") || "нет участников";
+      var membersLine = members.map(function(a){ return a.name; }).join(", ") || "сегодня никого нет";
+      if(allMembers.length > members.length){
+        membersLine += " (" + (allMembers.length - members.length) + " из состава не отмечены на сегодня)";
+      }
+      membersEl.textContent = membersLine;
       info.appendChild(nameEl);
       info.appendChild(membersEl);
       head.appendChild(info);
@@ -1110,8 +1253,32 @@
         var runningHint = document.createElement("div");
         runningHint.className = "hint";
         runningHint.style.marginTop = "8px";
-        runningHint.textContent = "Бегут: " + runningCount + " — финишируйте каждого отдельно кнопкой «Финиш» в списке спортсменов ниже.";
+        runningHint.textContent = "Бегут: " + runningCount + " — финишируйте каждого отдельно:";
         card.appendChild(runningHint);
+
+        var runningList = document.createElement("div");
+        runningList.className = "group-running-list";
+        members.filter(isRunning).forEach(function(a){
+          var lastAttempt = a.attempts[a.attempts.length-1];
+          var chip = document.createElement("div");
+          chip.className = "group-running-chip";
+          var nm = document.createElement("span");
+          nm.className = "grc-name";
+          nm.textContent = a.name;
+          var tm = document.createElement("span");
+          tm.className = "grc-time";
+          tm.id = "grouplive-" + a.id;
+          tm.textContent = fmtDur(Date.now() - lastAttempt.start);
+          var fin = document.createElement("button");
+          fin.className = "grc-finish";
+          fin.textContent = "Финиш";
+          fin.onclick = function(){ finishHeat(a.id); };
+          chip.appendChild(nm);
+          chip.appendChild(tm);
+          chip.appendChild(fin);
+          runningList.appendChild(chip);
+        });
+        card.appendChild(runningList);
       }
 
       groupsList.appendChild(card);
@@ -1174,6 +1341,86 @@
   document.getElementById("btnClearRun").onclick = openTrainingModal;
   document.getElementById("trainingModalCancel").onclick = function(){ trainingModal.classList.remove("show"); };
   trainingModal.onclick = function(e){ if(e.target === trainingModal) trainingModal.classList.remove("show"); };
+
+  /* ---------- roster (кто тренируется сегодня, по группам) ---------- */
+  var rosterModal = document.getElementById("rosterModal");
+  var rosterList = document.getElementById("rosterList");
+
+  function buildRosterRow(a){
+    var row = document.createElement("div");
+    row.className = "roster-row" + (a.active === false ? " inactive" : "");
+    var cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = a.active !== false;
+    cb.onchange = function(){ setAthleteActive(a.id, cb.checked); };
+    var name = document.createElement("span");
+    name.className = "roster-name";
+    name.textContent = a.name;
+    name.onclick = function(){ cb.checked = !cb.checked; cb.onchange(); };
+    var del = document.createElement("button");
+    del.className = "roster-del";
+    del.innerHTML = "&#128465;";
+    del.title = "Удалить насовсем";
+    del.onclick = function(){ confirmDeleteAthlete(a.id, a.name); };
+    row.appendChild(cb);
+    row.appendChild(name);
+    row.appendChild(del);
+    return row;
+  }
+
+  function renderRosterModal(){
+    if(!rosterModal.classList.contains("show")) return;
+    rosterList.innerHTML = "";
+    var grouped = {};
+    var groupedIds = {};
+    state.groups.forEach(function(g){
+      grouped[g.id] = g.athleteIds.map(findAthlete).filter(Boolean);
+      grouped[g.id].forEach(function(a){ groupedIds[a.id] = true; });
+    });
+    var ungrouped = state.athletes.filter(function(a){ return !groupedIds[a.id]; });
+
+    if(!state.athletes.length){
+      rosterList.innerHTML = "<div class='hint'>Пока нет ни одного спортсмена. Добавьте через «+ Спортсмен».</div>";
+      return;
+    }
+
+    state.groups.forEach(function(g){
+      var members = grouped[g.id];
+      if(!members.length) return;
+      var section = document.createElement("div");
+      section.className = "roster-section";
+      var title = document.createElement("div");
+      title.className = "roster-section-title";
+      title.textContent = g.name;
+      section.appendChild(title);
+      var box = document.createElement("div");
+      box.className = "roster-list-box";
+      members.forEach(function(a){ box.appendChild(buildRosterRow(a)); });
+      section.appendChild(box);
+      rosterList.appendChild(section);
+    });
+
+    if(ungrouped.length){
+      var section2 = document.createElement("div");
+      section2.className = "roster-section";
+      var title2 = document.createElement("div");
+      title2.className = "roster-section-title";
+      title2.textContent = "Без группы";
+      section2.appendChild(title2);
+      var box2 = document.createElement("div");
+      box2.className = "roster-list-box";
+      ungrouped.forEach(function(a){ box2.appendChild(buildRosterRow(a)); });
+      section2.appendChild(box2);
+      rosterList.appendChild(section2);
+    }
+  }
+
+  document.getElementById("btnShowRoster").onclick = function(){
+    rosterModal.classList.add("show");
+    renderRosterModal();
+  };
+  document.getElementById("rosterCloseBtn").onclick = function(){ rosterModal.classList.remove("show"); };
+  rosterModal.onclick = function(e){ if(e.target === rosterModal) rosterModal.classList.remove("show"); };
 
   /* ---------- modal ---------- */
   var modalBackdrop = document.getElementById("modalBackdrop");
