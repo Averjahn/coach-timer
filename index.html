@@ -295,6 +295,22 @@
   .lb-mark-btn{background:var(--red);color:#fff;padding:10px 18px;font-size:14px;}
   .lb-mark-btn:hover{background:var(--red-d);}
 
+  .training-type-opt{
+    display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+    text-align:left;width:100%;padding:14px 16px;border-radius:12px;
+    border:2px solid var(--border);background:var(--panel-2);cursor:pointer;
+  }
+  .training-type-opt:hover{border-color:var(--blue);}
+  .training-type-opt.active{border-color:var(--blue);background:rgba(37,99,235,0.08);}
+  .training-type-opt .tt-name{font-weight:700;font-size:15px;color:var(--text);}
+  .training-type-opt .tt-desc{font-size:12px;color:var(--muted);font-weight:500;line-height:1.4;}
+  .btn-stop-tempo{
+    width:44px;height:44px;flex-shrink:0;border-radius:12px;
+    background:var(--panel-2);color:var(--muted);border:1px solid var(--border);
+    font-size:16px;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .btn-stop-tempo:hover{background:var(--red);color:#fff;border-color:var(--red);}
+
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(0,0,0,0.6);
     display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
@@ -329,7 +345,7 @@
   <div class="header-actions">
     <button class="btn" id="btnShowAdd">+ Спортсмен</button>
     <button class="btn" id="btnShowGroup">+ Группа</button>
-    <button class="btn" id="btnClearRun" title="Очистить все заезды всех спортсменов">Новая сессия</button>
+    <button class="btn" id="btnClearRun" title="Начать новую тренировку">Новая тренировка</button>
     <button class="btn" id="btnShowQr" title="Установить приложение на Android">📱 Установить</button>
   </div>
 </header>
@@ -452,7 +468,7 @@
   <div class="view" id="view-archive">
     <div id="archiveEmpty" class="empty">
       <div class="big">🗄</div>
-      <div>Архив пуст.<br>Когда вы нажмёте «Новая сессия», текущие заезды сохранятся сюда с датой тренировки.</div>
+      <div>Архив пуст.<br>Когда вы нажмёте «Новая тренировка», текущие заезды сохранятся сюда с датой тренировки.</div>
     </div>
     <div id="archiveList" style="display:none;"></div>
   </div>
@@ -466,6 +482,15 @@
       <button class="btn" id="modalCancel">Отмена</button>
       <button class="btn" id="modalOk" style="background:var(--red);color:#fff;">Удалить</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="trainingModal">
+  <div class="modal" style="max-width:420px;">
+    <p style="margin:0 0 4px;font-weight:700;font-size:16px;">Новая тренировка</p>
+    <p class="hint" style="margin:0 0 16px;">Текущие результаты (если есть) сохранятся в архиве. Выберите тип тренировки:</p>
+    <div id="trainingTypeOptions" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <button class="btn" id="trainingModalCancel" style="width:100%;margin-top:14px;">Отмена</button>
   </div>
 </div>
 
@@ -503,10 +528,11 @@
         s.protocolSession = s.protocolSession || null;
         s.archive = s.archive || [];
         s.groups = s.groups || [];
+        s.trainingType = s.trainingType || "interval";
         return s;
       }
     }catch(e){}
-    return { athletes: [], nextId: 1, protocolSession: null, archive: [], groups: [] };
+    return { athletes: [], nextId: 1, protocolSession: null, archive: [], groups: [], trainingType: "interval" };
   }
 
   var saveTimer = null;
@@ -590,7 +616,27 @@
     renderGroups();
   }
 
+  // In tempo training this is a "lap" button: it closes the current attempt
+  // and immediately opens the next one at the same instant, so the athlete's
+  // clock never stops between laps. Interval/group trainings just close it.
   function finishHeat(athleteId){
+    var a = findAthlete(athleteId);
+    if(!a || !isRunning(a)) return;
+    var now = Date.now();
+    var last = a.attempts[a.attempts.length-1];
+    last.finish = now;
+    if(state.trainingType === "tempo"){
+      a.attempts.push({ start: now, finish: null });
+    }
+    persist();
+    renderTable();
+    renderHistory();
+    renderGroups();
+    toast(a.name + ": записано " + fmtDur(last.finish - last.start));
+  }
+
+  // Tempo-only: end the run without opening a new lap (the athlete is done).
+  function stopTempo(athleteId){
     var a = findAthlete(athleteId);
     if(!a || !isRunning(a)) return;
     a.attempts[a.attempts.length-1].finish = Date.now();
@@ -598,8 +644,7 @@
     renderTable();
     renderHistory();
     renderGroups();
-    var last = a.attempts[a.attempts.length-1];
-    toast(a.name + ": записано " + fmtDur(last.finish - last.start));
+    toast(a.name + ": тренировка завершена");
   }
 
   function undoLastHeat(athleteId){
@@ -674,26 +719,9 @@
     }
   }
 
-  function finishGroupHeat(groupId){
-    var g = findGroup(groupId);
-    if(!g) return;
-    var now = Date.now();
-    var count = 0;
-    g.athleteIds.forEach(function(id){
-      var a = findAthlete(id);
-      if(a && isRunning(a)){
-        a.attempts[a.attempts.length-1].finish = now;
-        count++;
-      }
-    });
-    if(count){
-      persist();
-      renderTable();
-      renderHistory();
-      renderGroups();
-      toast("Группа «" + g.name + "»: финиш (" + count + ")");
-    }
-  }
+  // Note: deliberately no bulk "finish group" action — athletes must always be
+  // finished individually, from their own row, since they cross the line at
+  // different times.
 
   function removeGroup(id){
     state.groups = state.groups.filter(function(g){ return g.id !== id; });
@@ -815,12 +843,22 @@
         live.className = "cell-live";
         live.id = "live-" + a.id;
         live.textContent = fmtDur(Date.now() - lastAttempt.start);
+        var isTempo = state.trainingType === "tempo";
         var finishBtn = document.createElement("button");
         finishBtn.className = "cell-btn btn-heat-finish";
-        finishBtn.textContent = "■ Финиш";
+        finishBtn.textContent = isTempo ? "🏁 Финиш круга" : "■ Финиш";
+        finishBtn.title = isTempo ? "Записать круг и сразу начать следующий" : "Завершить заезд";
         finishBtn.onclick = function(){ finishHeat(a.id); };
         control.appendChild(live);
         control.appendChild(finishBtn);
+        if(isTempo){
+          var stopBtn = document.createElement("button");
+          stopBtn.className = "btn-stop-tempo";
+          stopBtn.innerHTML = "&#9632;";
+          stopBtn.title = "Завершить тренировку (без нового круга)";
+          stopBtn.onclick = function(){ stopTempo(a.id); };
+          control.appendChild(stopBtn);
+        }
       } else {
         var startBtn = document.createElement("button");
         startBtn.className = "cell-btn btn-heat-start";
@@ -1066,15 +1104,15 @@
         startBtn.onclick = function(){ startGroupHeat(g.id); };
         actions.appendChild(startBtn);
       }
-      if(runningCount > 0){
-        var finishBtn = document.createElement("button");
-        finishBtn.className = "btn";
-        finishBtn.style.cssText = "background:var(--red);color:#fff;";
-        finishBtn.textContent = "■ Финиш группы (" + runningCount + ")";
-        finishBtn.onclick = function(){ finishGroupHeat(g.id); };
-        actions.appendChild(finishBtn);
-      }
       card.appendChild(actions);
+
+      if(runningCount > 0){
+        var runningHint = document.createElement("div");
+        runningHint.className = "hint";
+        runningHint.style.marginTop = "8px";
+        runningHint.textContent = "Бегут: " + runningCount + " — финишируйте каждого отдельно кнопкой «Финиш» в списке спортсменов ниже.";
+        card.appendChild(runningHint);
+      }
 
       groupsList.appendChild(card);
     });
@@ -1088,24 +1126,54 @@
     state.archive.unshift({
       id: "s" + Date.now() + "_" + Math.random().toString(36).slice(2,7),
       createdAt: Date.now(),
+      trainingType: state.trainingType,
       athletes: rows
     });
   }
 
-  document.getElementById("btnClearRun").onclick = function(){
-    var any = state.athletes.some(function(a){ return a.attempts.length > 0; });
-    if(!any){ toast("Нечего очищать"); return; }
-    showModal("Начать новую сессию? Текущие заезды сохранятся в архиве по сегодняшней дате, а у спортсменов начнётся отсчёт заново.", function(){
-      archiveCurrentSession();
-      state.athletes.forEach(function(a){ a.attempts = []; });
-      persist();
-      renderTable();
-      renderGroups();
-      renderHistory();
-      renderArchive();
-      toast("Сессия сохранена в архив, начата новая");
-    }, { okLabel: "Сохранить и начать", okStyle: "neutral" });
-  };
+  /* ---------- training type (интервальная / темповая / групповая) ---------- */
+  var TRAINING_TYPES = [
+    { id:"interval", name:"Интервальная", icon:"🔁", desc:"Старт и финиш нажимаются отдельно на каждый забег" },
+    { id:"tempo", name:"Темповая", icon:"⏩", desc:"Финиш сразу запускает следующий круг — для бега несколькими кругами подряд без остановки" },
+    { id:"group", name:"Групповая", icon:"👥", desc:"Добавьте пришедших спортсменов и стартуйте группой одной кнопкой — финиширует каждый по отдельности" }
+  ];
+  function trainingTypeMeta(id){
+    for(var i=0;i<TRAINING_TYPES.length;i++){ if(TRAINING_TYPES[i].id === id) return TRAINING_TYPES[i]; }
+    return TRAINING_TYPES[0];
+  }
+  function updateSessionLabel(){
+    document.getElementById("sessionLabel").textContent = trainingTypeMeta(state.trainingType).name + " тренировка";
+  }
+
+  var trainingModal = document.getElementById("trainingModal");
+  function openTrainingModal(){
+    var wrap = document.getElementById("trainingTypeOptions");
+    wrap.innerHTML = "";
+    TRAINING_TYPES.forEach(function(t){
+      var btn = document.createElement("button");
+      btn.className = "training-type-opt" + (state.trainingType === t.id ? " active" : "");
+      btn.innerHTML = "<span class='tt-name'>" + t.icon + " " + t.name + "</span><span class='tt-desc'>" + t.desc + "</span>";
+      btn.onclick = function(){ confirmNewTraining(t.id); };
+      wrap.appendChild(btn);
+    });
+    trainingModal.classList.add("show");
+  }
+  function confirmNewTraining(typeId){
+    archiveCurrentSession();
+    state.athletes.forEach(function(a){ a.attempts = []; });
+    state.trainingType = typeId;
+    persist();
+    renderTable();
+    renderGroups();
+    renderHistory();
+    renderArchive();
+    updateSessionLabel();
+    trainingModal.classList.remove("show");
+    toast("Новая тренировка: " + trainingTypeMeta(typeId).name);
+  }
+  document.getElementById("btnClearRun").onclick = openTrainingModal;
+  document.getElementById("trainingModalCancel").onclick = function(){ trainingModal.classList.remove("show"); };
+  trainingModal.onclick = function(e){ if(e.target === trainingModal) trainingModal.classList.remove("show"); };
 
   /* ---------- modal ---------- */
   var modalBackdrop = document.getElementById("modalBackdrop");
@@ -1392,7 +1460,8 @@
       dateEl.textContent = fmtArchiveDate(session.createdAt);
       var metaEl = document.createElement("div");
       metaEl.className = "hist-count";
-      metaEl.textContent = rows.length + " спортсменов, " + totalAttempts + " результатов";
+      var typeLabel = session.trainingType ? trainingTypeMeta(session.trainingType).name + " · " : "";
+      metaEl.textContent = typeLabel + rows.length + " спортсменов, " + totalAttempts + " результатов";
       info.appendChild(dateEl);
       info.appendChild(metaEl);
       head.appendChild(info);
@@ -2075,6 +2144,7 @@
   }, 1000);
 
   /* ---------- init ---------- */
+  updateSessionLabel();
   renderTable();
   renderGroups();
   renderHistory();
