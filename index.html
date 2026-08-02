@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Секундомеры тренера</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
@@ -326,6 +330,7 @@
     <button class="btn" id="btnShowAdd">+ Спортсмен</button>
     <button class="btn" id="btnShowGroup">+ Группа</button>
     <button class="btn" id="btnClearRun" title="Очистить все заезды всех спортсменов">Новая сессия</button>
+    <button class="btn" id="btnShowQr" title="QR-код для установки на Android">📱 Android</button>
   </div>
 </header>
 
@@ -461,6 +466,16 @@
       <button class="btn" id="modalCancel">Отмена</button>
       <button class="btn" id="modalOk" style="background:var(--red);color:#fff;">Удалить</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="qrBackdrop">
+  <div class="modal" style="text-align:center;max-width:320px;">
+    <p style="margin:0 0 14px;font-weight:700;font-size:16px;">Установить на Android</p>
+    <img src="assets/qr-android.png" alt="QR-код на скачивание приложения" style="width:100%;max-width:220px;border-radius:12px;border:1px solid var(--border);">
+    <p style="font-size:13px;color:var(--muted);margin:14px 0 4px;">Отсканируйте камерой или QR-сканером в Chrome, затем в меню браузера выберите «Установить приложение» — иконка появится на рабочем столе.</p>
+    <p style="font-size:12px;color:var(--muted);word-break:break-all;margin:8px 0 18px;">averjahn.github.io/coach-timer/</p>
+    <button class="btn primary" id="qrCloseBtn" style="width:100%;">Понятно</button>
   </div>
 </div>
 
@@ -1120,6 +1135,12 @@
     hideModal();
   };
   modalBackdrop.onclick = function(e){ if(e.target === modalBackdrop) hideModal(); };
+
+  /* ---------- QR / install on Android ---------- */
+  var qrBackdrop = document.getElementById("qrBackdrop");
+  document.getElementById("btnShowQr").onclick = function(){ qrBackdrop.classList.add("show"); };
+  document.getElementById("qrCloseBtn").onclick = function(){ qrBackdrop.classList.remove("show"); };
+  qrBackdrop.onclick = function(e){ if(e.target === qrBackdrop) qrBackdrop.classList.remove("show"); };
 
   /* ---------- tabs ---------- */
   var tabs = document.querySelectorAll(".tab");
