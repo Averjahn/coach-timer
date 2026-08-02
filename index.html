@@ -330,7 +330,7 @@
     <button class="btn" id="btnShowAdd">+ Спортсмен</button>
     <button class="btn" id="btnShowGroup">+ Группа</button>
     <button class="btn" id="btnClearRun" title="Очистить все заезды всех спортсменов">Новая сессия</button>
-    <button class="btn" id="btnShowQr" title="QR-код для установки на Android">📱 Android</button>
+    <button class="btn" id="btnShowQr" title="Установить приложение на Android">📱 Установить</button>
   </div>
 </header>
 
@@ -1136,11 +1136,32 @@
   };
   modalBackdrop.onclick = function(e){ if(e.target === modalBackdrop) hideModal(); };
 
-  /* ---------- QR / install on Android ---------- */
+  /* ---------- install on Android ---------- */
   var qrBackdrop = document.getElementById("qrBackdrop");
-  document.getElementById("btnShowQr").onclick = function(){ qrBackdrop.classList.add("show"); };
+  var deferredInstallPrompt = null;
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+  document.getElementById("btnShowQr").onclick = function(){
+    if(deferredInstallPrompt){
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then(function(choice){
+        if(choice.outcome === "accepted") toast("Приложение устанавливается…");
+        deferredInstallPrompt = null;
+      });
+      return;
+    }
+    // no native install prompt available on this browser/device (e.g. iOS,
+    // desktop, or already installed) — fall back to the QR/manual instructions
+    qrBackdrop.classList.add("show");
+  };
   document.getElementById("qrCloseBtn").onclick = function(){ qrBackdrop.classList.remove("show"); };
   qrBackdrop.onclick = function(e){ if(e.target === qrBackdrop) qrBackdrop.classList.remove("show"); };
+  window.addEventListener("appinstalled", function(){
+    deferredInstallPrompt = null;
+    toast("Приложение установлено");
+  });
 
   /* ---------- tabs ---------- */
   var tabs = document.querySelectorAll(".tab");
@@ -2061,14 +2082,19 @@
   renderLeaderboard();
   renderArchive();
 
-  // prevent accidental pull-to-refresh / double-tap zoom on tablets
+  // prevent pinch-zoom on tablets without blocking normal single-finger scrolling
+  // (checking e.scale here was a bug: that property is undefined on plain
+  // touchmove events, so the old `e.scale !== 1` check was true on every touch
+  // and preventDefault()'d all scrolling, not just pinch gestures)
   document.addEventListener("touchmove", function(e){
-    if(e.scale !== 1){ e.preventDefault(); }
+    if(e.touches && e.touches.length > 1){ e.preventDefault(); }
   }, { passive:false });
+  // prevent double-tap-to-zoom without eating the second tap of a legitimate
+  // double interaction target (buttons/inputs still work via click as normal)
   var lastTouchEnd = 0;
   document.addEventListener("touchend", function(e){
     var now = Date.now();
-    if(now - lastTouchEnd <= 300){ e.preventDefault(); }
+    if(now - lastTouchEnd <= 300 && e.touches.length === 0){ e.preventDefault(); }
     lastTouchEnd = now;
   }, false);
 
