@@ -2098,6 +2098,15 @@
     lastTouchEnd = now;
   }, false);
 
+  // register the service worker so the app (secundomeры, группы, история,
+  // архив) keeps working with no internet connection after the first visit —
+  // only the optional "Протокол" PDF/OCR tab genuinely needs a connection.
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    });
+  }
+
 })();
 </script>
 </body>
