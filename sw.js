@@ -3,7 +3,7 @@
 // else (including the CDN-hosted PDF/OCR libraries used only by the optional
 // "Протокол" tab) is cached opportunistically the first time it's fetched
 // online, then served from cache on later offline visits.
-var CACHE_NAME = "coach-timer-v3";
+var CACHE_NAME = "coach-timer-v4";
 var APP_SHELL = [
   "./",
   "./index.html",
@@ -33,6 +33,34 @@ self.addEventListener("activate", function(event){
 
 self.addEventListener("fetch", function(event){
   if(event.request.method !== "GET") return;
+
+  // The HTML document itself (navigations, plus index.html directly) must be
+  // network-first: with stale-while-revalidate here, every deploy would look
+  // "not deployed yet" on the very next visit (old cached page serves
+  // instantly, the fix only shows up on a *second* reload) — that's the
+  // opposite of what a coach re-checking a bug fix expects. Static assets
+  // (CSS-in-HTML doesn't apply here since it's a single file, but icons/CDN
+  // libs do) stay stale-while-revalidate for instant offline loads.
+  var isHtml = event.request.mode === "navigate" ||
+    event.request.destination === "document" ||
+    event.request.url.indexOf("index.html") !== -1;
+
+  if(isHtml){
+    event.respondWith(
+      fetch(event.request).then(function(response){
+        if(response && response.ok){
+          var copy = response.clone();
+          caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+        }
+        return response;
+      }).catch(function(){
+        return caches.match(event.request).then(function(cached){
+          return cached || caches.match("./index.html");
+        });
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(function(cached){
