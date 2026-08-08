@@ -3,7 +3,7 @@
 // else (including the CDN-hosted PDF/OCR libraries used only by the optional
 // "Протокол" tab) is cached opportunistically the first time it's fetched
 // online, then served from cache on later offline visits.
-var CACHE_NAME = "coach-timer-v5";
+var CACHE_NAME = "coach-timer-v6";
 var APP_SHELL = [
   "./",
   "./index.html",
@@ -14,11 +14,18 @@ var APP_SHELL = [
 ];
 
 self.addEventListener("install", function(event){
+  // Deliberately NOT calling skipWaiting() here: taking over immediately would
+  // swap the app out from under a coach who is mid-training. The page detects
+  // the waiting worker, shows an "Обновить" banner, and sends SKIP_WAITING when
+  // the user agrees. (User data lives in localStorage and is untouched either
+  // way — activation only swaps cached files.)
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache){ return cache.addAll(APP_SHELL); })
-      .then(function(){ return self.skipWaiting(); })
+    caches.open(CACHE_NAME).then(function(cache){ return cache.addAll(APP_SHELL); })
   );
+});
+
+self.addEventListener("message", function(event){
+  if(event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", function(event){
