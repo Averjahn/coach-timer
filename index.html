@@ -11,8 +11,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
-  :root{
+  /* ---- Themes ----
+     Every theme redefines the same variable contract, so all components below
+     are theme-agnostic. --accent is the "primary action" hue, --green/--red
+     stay semantic (start/finish) but are tuned per theme for contrast. */
+  :root, [data-theme="light"]{
     --bg:#f3f5fa;
+    --bg-accent:linear-gradient(180deg,#eef2fb 0%,#f3f5fa 260px);
     --panel:#ffffff;
     --panel-2:#eef1f8;
     --border:#dde3ef;
@@ -22,10 +27,104 @@
     --green-d:#15803d;
     --red:#dc2626;
     --red-d:#b91c1c;
-    --blue:#2563eb;
-    --blue-d:#1d4ed8;
+    --accent:#2563eb;
+    --accent-d:#1d4ed8;
+    --accent-soft:rgba(37,99,235,0.09);
     --amber:#d97706;
-    --radius:16px;
+    --green-soft:rgba(22,163,74,0.13);
+    --amber-soft:rgba(217,119,6,0.12);
+    --shadow:0 1px 2px rgba(22,28,44,.05), 0 8px 24px -12px rgba(22,28,44,.14);
+    --shadow-lg:0 12px 40px -12px rgba(22,28,44,.28);
+    --radius:18px;
+  }
+  [data-theme="dark"]{
+    --bg:#0e1420;
+    --bg-accent:linear-gradient(180deg,#152033 0%,#0e1420 260px);
+    --panel:#18212f;
+    --panel-2:#212c3d;
+    --border:#2c3a4f;
+    --text:#eef3fb;
+    --muted:#94a3b8;
+    --green:#22c55e;
+    --green-d:#16a34a;
+    --red:#f05252;
+    --red-d:#dc2626;
+    --accent:#3b82f6;
+    --accent-d:#2563eb;
+    --accent-soft:rgba(59,130,246,0.16);
+    --amber:#fbbf24;
+    --green-soft:rgba(34,197,94,0.18);
+    --amber-soft:rgba(251,191,36,0.16);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    --shadow-lg:0 12px 40px -12px rgba(0,0,0,.7);
+    --radius:18px;
+  }
+  [data-theme="sunset"]{
+    --bg:#fdf6f1;
+    --bg-accent:linear-gradient(180deg,#fceee4 0%,#fdf6f1 260px);
+    --panel:#ffffff;
+    --panel-2:#faeee6;
+    --border:#f0dccd;
+    --text:#2b1c14;
+    --muted:#8a6f5e;
+    --green:#15803d;
+    --green-d:#166534;
+    --red:#dc2626;
+    --red-d:#b91c1c;
+    --accent:#ea580c;
+    --accent-d:#c2410c;
+    --accent-soft:rgba(234,88,12,0.1);
+    --amber:#b45309;
+    --green-soft:rgba(21,128,61,0.13);
+    --amber-soft:rgba(180,83,9,0.12);
+    --shadow:0 1px 2px rgba(80,40,20,.06), 0 8px 24px -12px rgba(80,40,20,.18);
+    --shadow-lg:0 12px 40px -12px rgba(80,40,20,.3);
+    --radius:18px;
+  }
+  [data-theme="forest"]{
+    --bg:#f2f8f3;
+    --bg-accent:linear-gradient(180deg,#e6f2e9 0%,#f2f8f3 260px);
+    --panel:#ffffff;
+    --panel-2:#e9f3ec;
+    --border:#d2e5d8;
+    --text:#12241a;
+    --muted:#5c7768;
+    --green:#15803d;
+    --green-d:#14532d;
+    --red:#c2410c;
+    --red-d:#9a3412;
+    --accent:#047857;
+    --accent-d:#065f46;
+    --accent-soft:rgba(4,120,87,0.1);
+    --amber:#a16207;
+    --green-soft:rgba(21,128,61,0.13);
+    --amber-soft:rgba(161,98,7,0.12);
+    --shadow:0 1px 2px rgba(18,36,26,.06), 0 8px 24px -12px rgba(18,36,26,.18);
+    --shadow-lg:0 12px 40px -12px rgba(18,36,26,.3);
+    --radius:18px;
+  }
+  /* For direct sunlight on a tablet at the track: max contrast, no soft greys. */
+  [data-theme="contrast"]{
+    --bg:#ffffff;
+    --bg-accent:none;
+    --panel:#ffffff;
+    --panel-2:#f0f0f0;
+    --border:#000000;
+    --text:#000000;
+    --muted:#3a3a3a;
+    --green:#047857;
+    --green-d:#065f46;
+    --red:#c00000;
+    --red-d:#8f0000;
+    --accent:#0033cc;
+    --accent-d:#001f80;
+    --accent-soft:rgba(0,51,204,0.1);
+    --amber:#8a4b00;
+    --green-soft:rgba(4,120,87,0.16);
+    --amber-soft:rgba(138,75,0,0.16);
+    --shadow:0 0 0 1px #000;
+    --shadow-lg:0 8px 24px rgba(0,0,0,.4);
+    --radius:12px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -40,56 +139,93 @@
   }
   header{
     position:sticky;top:0;z-index:30;
-    background:rgba(255,255,255,0.92);
-    backdrop-filter:blur(8px);
+    background:var(--panel);
     border-bottom:1px solid var(--border);
-    padding:14px 20px;
+    padding:12px 20px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:12px;
+    gap:14px;
     flex-wrap:wrap;
   }
-  h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px;}
-  h1 span{color:var(--muted);font-weight:500;font-size:14px;display:block;margin-top:2px;}
-  .header-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:11px;min-width:0;}
+  .brand-mark{
+    width:42px;height:42px;flex-shrink:0;border-radius:13px;
+    background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+  }
+  h1{font-size:19px;margin:0;font-weight:800;letter-spacing:-.2px;line-height:1.15;}
+  h1 span{color:var(--muted);font-weight:600;font-size:12.5px;display:block;margin-top:2px;letter-spacing:0;}
+  .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   button{
     font-family:inherit;
     border:none;
     cursor:pointer;
     border-radius:12px;
     font-weight:600;
-    transition:transform .06s ease, filter .1s ease, opacity .1s ease;
+    transition:transform .06s ease, filter .1s ease, opacity .1s ease, background .12s ease;
     -webkit-tap-highlight-color:transparent;
   }
   button:active{transform:scale(0.96);}
   .btn{
-    padding:11px 18px;
-    font-size:15px;
+    padding:10px 15px;
+    font-size:14px;
     background:var(--panel-2);
     color:var(--text);
     border:1px solid var(--border);
   }
-  .btn:hover{filter:brightness(1.15);}
-  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
-  .btn.primary:hover{background:var(--blue-d);}
+  .btn:hover{filter:brightness(1.05);border-color:var(--accent);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:var(--accent-d);filter:none;}
+  .btn-icon{padding:10px 12px;font-size:16px;line-height:1;}
 
-  .tabs{display:flex;gap:6px;padding:10px 20px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .tab{
-    padding:9px 16px;font-size:14px;border-radius:10px 10px 0 0;
-    background:transparent;color:var(--muted);border:1px solid transparent;
-    white-space:nowrap;flex-shrink:0;
+  .tabs{
+    display:flex;gap:4px;padding:10px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    background:var(--panel);border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:25;
   }
-  .tab.active{background:var(--panel);color:var(--text);border:1px solid var(--border);border-bottom-color:var(--panel);}
+  .tab{
+    padding:9px 15px;font-size:13.5px;border-radius:11px;
+    background:transparent;color:var(--muted);border:1px solid transparent;
+    white-space:nowrap;flex-shrink:0;font-weight:600;
+  }
+  .tab:hover{background:var(--panel-2);color:var(--text);}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 
-  main{padding:18px 20px 40px;max-width:1600px;margin:0 auto;}
+  main{
+    padding:20px;max-width:1600px;margin:0 auto;
+    background:var(--bg-accent);min-height:calc(100vh - 140px);
+  }
   .view{display:none;}
   .view.active{display:block;}
 
+  /* ---- Section block: the main compositional unit of the redesign ---- */
+  .block{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;
+  }
+  .block-head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;
+    background:var(--panel-2);
+  }
+  .block-title{
+    font-size:12px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.6px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .block-title .count{
+    background:var(--accent);color:#fff;border-radius:99px;
+    padding:1px 8px;font-size:11px;letter-spacing:0;
+  }
+  .block-body{padding:14px 16px;}
+  .block-body.flush{padding:0;}
+
   .empty{
-    text-align:center;padding:60px 20px;color:var(--muted);
+    text-align:center;padding:56px 20px;color:var(--muted);
   }
   .empty .big{font-size:44px;margin-bottom:10px;}
+  .empty.in-block{padding:40px 20px;}
 
   /* Add athlete panel */
   .add-panel{
@@ -109,9 +245,10 @@
   .groups-bar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;}
   .groups-bar-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
   .group-card{
-    background:var(--panel);border:1px solid var(--border);border-radius:14px;
-    padding:12px 14px;margin-bottom:10px;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:14px;
+    padding:12px 14px;
   }
+  .group-card + .group-card{margin-top:10px;}
   .group-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
   .group-name{font-size:15px;font-weight:700;}
   .group-name button{background:transparent;border:none;padding:0;margin-left:6px;color:var(--muted);font-weight:600;font-size:12px;cursor:pointer;text-decoration:underline;}
@@ -174,6 +311,8 @@
     box-shadow:0 1px 3px rgba(22,28,44,0.06);
     max-width:100%;
   }
+  /* inside a .block the wrapper shouldn't repeat the card chrome */
+  .table-wrap.flat{border:none;border-radius:0;box-shadow:none;background:transparent;}
   .status-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0;}
   .status-dot.running{background:var(--green);box-shadow:0 0 8px var(--green);}
   .row-icon-btn{
@@ -201,46 +340,64 @@
     font-weight:800;font-size:26px;color:var(--green);letter-spacing:.3px;
   }
 
+  /* Athlete cards: a responsive grid of self-contained blocks. On a portrait
+     tablet this lands on 2 columns, which reads far better than one very wide
+     row per athlete with a lot of dead space in the middle. */
+  .ath-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(330px, 1fr));
+    gap:12px;
+  }
   .ath-row{
-    display:flex;align-items:center;gap:12px;
-    padding:12px 14px;border-bottom:1px solid var(--border);
+    background:var(--panel);border:1px solid var(--border);border-radius:15px;
+    padding:12px 13px 13px;
+    display:flex;flex-direction:column;gap:10px;
+    cursor:grab;touch-action:pan-y;
+    transition:border-color .12s ease, box-shadow .12s ease, opacity .12s ease;
   }
-  .ath-row:last-child{border-bottom:none;}
-  .ath-row.dragging{opacity:.55;background:var(--panel-2);}
-  .ath-main{display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:180px;cursor:grab;}
-  .ath-main:active{cursor:grabbing;}
+  .ath-row:active{cursor:grabbing;}
+  .ath-row.is-running{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);}
+  .ath-row.dragging{
+    opacity:.6;border-color:var(--accent);border-style:dashed;
+    box-shadow:var(--shadow-lg);
+  }
+  .ath-main{display:flex;align-items:center;gap:7px;min-width:0;}
   .ath-drag{
-    width:26px;height:26px;flex-shrink:0;border-radius:8px;
+    width:22px;height:26px;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    color:var(--muted);font-size:17px;cursor:grab;line-height:1;
-    touch-action:none;-webkit-user-select:none;user-select:none;
+    color:var(--muted);font-size:15px;line-height:1;opacity:.65;
+    -webkit-user-select:none;user-select:none;
   }
-  .ath-drag:active{cursor:grabbing;background:var(--panel-2);}
   .ath-name{
-    font-size:15px;font-weight:700;flex:1;min-width:0;
+    font-size:16px;font-weight:800;flex:1;min-width:0;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    cursor:pointer;border-radius:6px;padding:2px 6px;margin:-2px -6px;
+    cursor:text;border-radius:7px;padding:3px 6px;margin:-3px -6px;
   }
   .ath-name:hover{background:var(--panel-2);}
   .ath-name-input{
-    font-size:15px;font-weight:700;flex:1;min-width:0;font-family:inherit;
-    border:1px solid var(--blue);border-radius:6px;padding:2px 6px;
+    font-size:16px;font-weight:800;flex:1;min-width:0;font-family:inherit;
+    border:1px solid var(--accent);border-radius:7px;padding:3px 6px;
     background:var(--panel);color:var(--text);
   }
-  .ath-run{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
-  .ath-heats{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;padding:3px 0;}
-  .ath-heats .hist-chip{flex-shrink:0;}
-  .hist-chip.running{background:rgba(22,163,74,0.12);border-color:rgba(22,163,74,0.35);}
+  .ath-run{display:flex;flex-direction:column;gap:10px;min-width:0;}
+  .ath-heats{
+    min-width:0;display:flex;gap:6px;overflow-x:auto;
+    padding:8px 10px;background:var(--panel-2);border-radius:11px;
+    min-height:42px;align-items:center;-webkit-overflow-scrolling:touch;
+  }
+  .ath-heats .hist-chip{flex-shrink:0;background:var(--panel);}
+  .hist-chip.running{background:var(--green-soft);border-color:var(--green);}
   .hist-chip.running .t{color:var(--green);}
-  .ath-control{flex-shrink:0;width:112px;}
-  .ath-control .cell-btn{width:100%;}
-  .ath-control .cell-live{font-size:15px;margin-bottom:4px;text-align:center;}
+  .ath-control{display:flex;align-items:center;gap:8px;}
+  .ath-control .cell-btn{flex:1;padding:15px 6px;font-size:15px;}
+  .ath-control .cell-live{
+    font-size:24px;min-width:104px;text-align:center;flex-shrink:0;
+    font-variant-numeric:tabular-nums;
+  }
 
-  @media (max-width:680px){
-    .ath-row{flex-wrap:wrap;row-gap:10px;}
-    .ath-main{width:100%;}
-    .ath-run{width:100%;}
-    .ath-control{width:92px;}
+  @media (max-width:420px){
+    .ath-list{grid-template-columns:1fr;}
+    .ath-control .cell-live{font-size:20px;min-width:88px;}
   }
 
   /* ---- History table: one row per athlete, times in a single line ---- */
@@ -328,7 +485,7 @@
   .lb-gap{font-family:ui-monospace,monospace;font-weight:800;}
   .lb-gap.leader{color:var(--green);}
   .lb-status-pending{color:var(--muted);font-size:13px;}
-  .lb-status-running{color:var(--blue);font-weight:800;font-family:ui-monospace,monospace;font-size:15px;}
+  .lb-status-running{color:var(--accent);font-weight:800;font-family:ui-monospace,monospace;font-size:15px;}
   .lb-mark-btn{background:var(--red);color:#fff;padding:10px 18px;font-size:14px;}
   .lb-mark-btn:hover{background:var(--red-d);}
 
@@ -337,10 +494,71 @@
     text-align:left;width:100%;padding:14px 16px;border-radius:12px;
     border:2px solid var(--border);background:var(--panel-2);cursor:pointer;
   }
-  .training-type-opt:hover{border-color:var(--blue);}
-  .training-type-opt.active{border-color:var(--blue);background:rgba(37,99,235,0.08);}
+  .training-type-opt:hover{border-color:var(--accent);}
+  .training-type-opt.active{border-color:var(--accent);background:var(--accent-soft);}
   .training-type-opt .tt-name{font-weight:700;font-size:15px;color:var(--text);}
   .training-type-opt .tt-desc{font-size:12px;color:var(--muted);font-weight:500;line-height:1.4;}
+  /* ---- Training leaderboard: two side-by-side rankings ---- */
+  .lb-duo{display:grid;grid-template-columns:repeat(auto-fit, minmax(340px,1fr));gap:16px;}
+  .lb-duo .block{margin-bottom:0;}
+  .lbl-row{
+    display:flex;align-items:center;gap:11px;
+    padding:11px 14px;border-bottom:1px solid var(--border);
+  }
+  .lbl-row:last-child{border-bottom:none;}
+  .lbl-row.top1{background:var(--amber-soft);}
+  .lbl-row.muted{opacity:.6;}
+  .lbl-rank{
+    width:26px;flex-shrink:0;text-align:center;
+    font-weight:800;font-size:15px;color:var(--muted);
+  }
+  .lbl-row.top1 .lbl-rank{color:var(--amber);}
+  .lbl-name{flex:1;min-width:0;font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lbl-sub{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px;}
+  .lbl-val{
+    flex-shrink:0;text-align:right;
+    font-family:'SF Mono','Roboto Mono',ui-monospace,monospace;
+    font-variant-numeric:tabular-nums;font-weight:800;font-size:19px;
+  }
+  .lbl-gap{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px;font-family:inherit;}
+
+  /* ---- Training leaderboard ---- */
+  .tlb{width:100%;border-collapse:collapse;}
+  .tlb th{
+    text-align:right;padding:10px 12px;font-size:11px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.5px;font-weight:800;
+    border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  .tlb th:nth-child(1), .tlb th:nth-child(2){text-align:left;}
+  .tlb td{
+    padding:11px 12px;border-bottom:1px solid var(--border);
+    font-size:14px;text-align:right;white-space:nowrap;
+  }
+  .tlb tbody tr:last-child td{border-bottom:none;}
+  .tlb tbody tr.top1{background:var(--amber-soft);}
+  .tlb .c-rank{
+    text-align:left;font-weight:800;font-size:15px;color:var(--muted);width:1%;
+  }
+  .tlb tbody tr.top1 .c-rank{color:var(--amber);}
+  .tlb .c-name{text-align:left;font-weight:700;max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+  .tlb .num{font-family:'SF Mono','Roboto Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .tlb .c-key{font-weight:800;font-size:17px;color:var(--text);}
+  .tlb .c-dim{color:var(--muted);font-size:13px;}
+  .tlb col.hl, .tlb .hl-cell{background:var(--accent-soft);}
+  .tlb-legend{padding:10px 14px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);background:var(--panel-2);}
+
+  /* ---- Theme picker ---- */
+  .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .theme-opt{
+    border:2px solid var(--border);background:var(--panel-2);border-radius:13px;
+    padding:11px;cursor:pointer;display:flex;flex-direction:column;gap:8px;text-align:left;
+  }
+  .theme-opt:hover{border-color:var(--accent);}
+  .theme-opt.active{border-color:var(--accent);background:var(--accent-soft);}
+  .theme-opt .tn{font-size:13.5px;font-weight:700;color:var(--text);}
+  .theme-swatch{display:flex;gap:4px;}
+  .theme-swatch i{width:100%;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.08);}
+
   .btn-stop-tempo{
     width:44px;height:44px;flex-shrink:0;border-radius:12px;
     background:var(--panel-2);color:var(--muted);border:1px solid var(--border);
@@ -378,13 +596,17 @@
 <body>
 
 <header>
-  <h1>⏱ Секундомеры <span id="sessionLabel">Тренировка</span></h1>
+  <div class="brand">
+    <div class="brand-mark">⏱</div>
+    <h1>Секундомеры<span id="sessionLabel">Тренировка</span></h1>
+  </div>
   <div class="header-actions">
     <button class="btn" id="btnShowAdd">+ Спортсмен</button>
     <button class="btn" id="btnShowGroup">+ Группа</button>
     <button class="btn" id="btnShowRoster" title="Выбрать, кто тренируется сегодня">👥 Состав</button>
-    <button class="btn" id="btnClearRun" title="Начать новую тренировку">Новая тренировка</button>
-    <button class="btn" id="btnShowQr" title="Установить приложение на Android">📱 Установить</button>
+    <button class="btn primary" id="btnClearRun" title="Начать новую тренировку">Новая тренировка</button>
+    <button class="btn btn-icon" id="btnShowTheme" title="Оформление">🎨</button>
+    <button class="btn btn-icon" id="btnShowQr" title="Установить приложение на Android">📱</button>
   </div>
 </header>
 
@@ -422,11 +644,11 @@
       </div>
     </div>
 
-    <div class="groups-bar" id="groupsBar" style="display:none;">
-      <div class="groups-bar-head">
-        <div class="groups-bar-title">Группы старта</div>
+    <div class="block" id="groupsBar" style="display:none;">
+      <div class="block-head">
+        <div class="block-title">👥 Группы старта</div>
       </div>
-      <div id="groupsList"></div>
+      <div class="block-body" id="groupsList"></div>
     </div>
 
     <div id="emptyState" class="empty" style="display:none;">
@@ -434,32 +656,41 @@
       <div>Пока нет ни одного спортсмена.<br>Нажмите «+ Спортсмен», чтобы добавить список.</div>
     </div>
 
-    <div class="table-wrap" id="tableWrap" style="display:none;">
-      <div class="ath-list" id="heatsList"></div>
+    <div class="block" id="tableWrap" style="display:none;">
+      <div class="block-head">
+        <div class="block-title">Спортсмены <span class="count" id="athCount">0</span></div>
+        <span class="hint">Зажмите карточку и потяните, чтобы поменять порядок</span>
+      </div>
+      <div class="block-body">
+        <div class="ath-list" id="heatsList"></div>
+      </div>
     </div>
   </div>
 
   <div class="view" id="view-history">
-    <div class="history-toolbar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap;">
-      <div class="hint" id="historyCount"></div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn" id="btnExportCsv">Экспорт CSV</button>
+    <div class="block">
+      <div class="block-head">
+        <div class="block-title">📋 Результаты тренировки</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="hint" id="historyCount"></span>
+          <button class="btn" id="btnExportCsv">Экспорт CSV</button>
+        </div>
       </div>
-    </div>
-    <div id="historyEmpty" class="empty" style="display:none;">
-      <div class="big">📋</div>
-      <div>Результатов пока нет.<br>Останавливайте секундомеры — время будет сохраняться сюда.</div>
-    </div>
-    <div class="table-wrap" id="historyWrap" style="display:none;">
-      <table id="historyTable" class="history-table">
-        <thead>
-          <tr>
-            <th class="hist-th hist-th-name">Спортсмен</th>
-            <th class="hist-th">Результаты</th>
-          </tr>
-        </thead>
-        <tbody id="historyBody"></tbody>
-      </table>
+      <div id="historyEmpty" class="empty in-block" style="display:none;">
+        <div class="big">📋</div>
+        <div>Результатов пока нет.<br>Останавливайте секундомеры — время будет сохраняться сюда.</div>
+      </div>
+      <div class="table-wrap flat" id="historyWrap" style="display:none;">
+        <table id="historyTable" class="history-table">
+          <thead>
+            <tr>
+              <th class="hist-th hist-th-name">Спортсмен</th>
+              <th class="hist-th">Результаты</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -490,9 +721,26 @@
   </div>
 
   <div class="view" id="view-leaderboard">
+    <div class="lb-duo">
+      <div class="block">
+        <div class="block-head">
+          <div class="block-title">⚡ Скорость</div>
+          <span class="hint">лучший заезд</span>
+        </div>
+        <div class="block-body flush" id="trainLbTime"></div>
+      </div>
+      <div class="block">
+        <div class="block-head">
+          <div class="block-title">🎯 Стабильность</div>
+          <span class="hint">разброс худший − лучший</span>
+        </div>
+        <div class="block-body flush" id="trainLbSpread"></div>
+      </div>
+    </div>
+
     <div id="lbEmpty" class="empty">
-      <div class="big">🏆</div>
-      <div>Сессия по протоколу ещё не создана.<br>Загрузите протокол на вкладке «Протокол» и нажмите «Создать сессию».</div>
+      <div class="big">📄</div>
+      <div>Лидерборд по протоколу соревнований пока не создан.<br>Загрузите протокол на вкладке «Протокол» и нажмите «Создать сессию».</div>
     </div>
     <div id="lbContent" style="display:none;">
       <div class="lb-toolbar">
@@ -529,6 +777,15 @@
     <p class="hint" style="margin:0 0 16px;">Текущие результаты (если есть) сохранятся в архиве. Выберите тип тренировки:</p>
     <div id="trainingTypeOptions" style="display:flex;flex-direction:column;gap:10px;"></div>
     <button class="btn" id="trainingModalCancel" style="width:100%;margin-top:14px;">Отмена</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="themeModal">
+  <div class="modal" style="max-width:420px;">
+    <p style="margin:0 0 4px;font-weight:700;font-size:16px;">Оформление</p>
+    <p class="hint" style="margin:0 0 14px;">Выберите цветовую тему. «Контраст» — для яркого солнца на улице.</p>
+    <div id="themeOptions" class="theme-grid"></div>
+    <button class="btn" id="themeCloseBtn" style="width:100%;margin-top:14px;">Готово</button>
   </div>
 </div>
 
@@ -579,10 +836,11 @@
         s.archive = s.archive || [];
         s.groups = s.groups || [];
         s.trainingType = s.trainingType || "interval";
+        s.theme = s.theme || "light";
         return s;
       }
     }catch(e){}
-    return { athletes: [], nextId: 1, protocolSession: null, archive: [], groups: [], trainingType: "interval" };
+    return { athletes: [], nextId: 1, protocolSession: null, archive: [], groups: [], trainingType: "interval", theme: "light" };
   }
 
   var saveTimer = null;
@@ -901,11 +1159,14 @@
       return;
     }
 
+    document.getElementById("athCount").textContent = activeList.length;
+
     activeList.forEach(function(a){
       var running = isRunning(a);
       var row = document.createElement("div");
-      row.className = "ath-row";
+      row.className = "ath-row" + (running ? " is-running" : "");
       row.dataset.id = a.id;
+      row.title = "Зажмите карточку и потяните, чтобы изменить порядок";
 
       var main = document.createElement("div");
       main.className = "ath-main";
@@ -913,7 +1174,6 @@
       var drag = document.createElement("div");
       drag.className = "ath-drag";
       drag.innerHTML = "&#10247;";
-      drag.title = "Зажмите и перетащите, чтобы изменить порядок";
 
       var dot = document.createElement("div");
       dot.className = "status-dot" + (running ? " running" : "");
@@ -943,7 +1203,7 @@
       main.appendChild(nameText);
       main.appendChild(undoBtn);
       main.appendChild(delBtn);
-      attachDragHandlers(main, a.id);
+      attachDragHandlers(row, a.id);
       row.appendChild(main);
 
       var run = document.createElement("div");
@@ -1002,41 +1262,42 @@
   var LONG_PRESS_MS = 260;
   var MOVE_CANCEL_PX = 8;
 
-  function attachDragHandlers(handleEl, athleteId){
-    handleEl.addEventListener("pointerdown", function(e){
+  // Drag is armed by pressing and holding anywhere on the card — not just a
+  // small handle — because grabbing a 22px dot is fiddly with a finger on a
+  // tablet. Interactive bits (buttons, the name field, the scrollable heat
+  // strip) opt out so they keep their own behaviour.
+  function attachDragHandlers(rowEl, athleteId){
+    rowEl.addEventListener("pointerdown", function(e){
       if(e.button !== undefined && e.button !== 0) return;
-      if(e.target.closest(".row-icon-btn")) return;
+      if(e.target.closest("button, input, .ath-name, .ath-heats")) return;
       var startX = e.clientX, startY = e.clientY;
-      var cancelled = false;
       var timer = setTimeout(function(){
         cleanup();
-        beginDrag(athleteId, handleEl);
+        beginDrag(athleteId, rowEl);
       }, LONG_PRESS_MS);
 
       function onMove(ev){
         if(Math.abs(ev.clientX-startX) > MOVE_CANCEL_PX || Math.abs(ev.clientY-startY) > MOVE_CANCEL_PX){
-          cancelled = true;
           cleanup();
         }
       }
       function onUp(){ cleanup(); }
       function cleanup(){
         clearTimeout(timer);
-        handleEl.removeEventListener("pointermove", onMove);
-        handleEl.removeEventListener("pointerup", onUp);
-        handleEl.removeEventListener("pointercancel", onUp);
+        rowEl.removeEventListener("pointermove", onMove);
+        rowEl.removeEventListener("pointerup", onUp);
+        rowEl.removeEventListener("pointercancel", onUp);
       }
-      handleEl.addEventListener("pointermove", onMove);
-      handleEl.addEventListener("pointerup", onUp);
-      handleEl.addEventListener("pointercancel", onUp);
+      rowEl.addEventListener("pointermove", onMove);
+      rowEl.addEventListener("pointerup", onUp);
+      rowEl.addEventListener("pointercancel", onUp);
     });
   }
 
-  function beginDrag(athleteId, handleEl){
+  function beginDrag(athleteId, rowEl){
     var idx = state.athletes.findIndex(function(a){ return a.id === athleteId; });
     if(idx === -1) return;
-    var rowEl = handleEl.closest(".ath-row");
-    if(!rowEl) return;
+    if(!rowEl || !rowEl.classList.contains("ath-row")) return;
     rowEl.classList.add("dragging");
     if(navigator.vibrate) navigator.vibrate(12);
     dragState = { id: athleteId };
@@ -1045,21 +1306,37 @@
     document.addEventListener("pointercancel", endDrag);
   }
 
+  // The list is a grid, so "which slot am I over" can't be decided from y
+  // alone: pick the card whose centre is nearest the pointer in 2D, then
+  // insert before or after it depending on which side we're on.
   function onDragMove(e){
     if(!dragState) return;
     e.preventDefault();
-    var y = e.clientY;
-    var curIdx = activeAthletesList().findIndex(function(a){ return a.id === dragState.id; });
+    var activeList = activeAthletesList();
+    var curIdx = activeList.findIndex(function(a){ return a.id === dragState.id; });
     if(curIdx === -1) return;
+
     var rows = heatsList.querySelectorAll(".ath-row");
-    var targetIdx = 0;
+    var best = null, bestDist = Infinity;
     for(var i=0;i<rows.length;i++){
       var r = rows[i];
       if(r.dataset.id === dragState.id) continue;
       var rect = r.getBoundingClientRect();
-      var mid = rect.top + rect.height/2;
-      if(mid < y) targetIdx++;
+      var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+      var dx = e.clientX - cx, dy = e.clientY - cy;
+      var dist = dx*dx + dy*dy;
+      if(dist < bestDist){
+        bestDist = dist;
+        best = { id: r.dataset.id, after: (dy > 0 || (Math.abs(dy) < rect.height/2 && dx > 0)) };
+      }
     }
+    if(!best) return;
+
+    var withoutDragged = activeList.filter(function(a){ return a.id !== dragState.id; });
+    var anchorIdx = withoutDragged.findIndex(function(a){ return a.id === best.id; });
+    if(anchorIdx === -1) return;
+    var targetIdx = best.after ? anchorIdx + 1 : anchorIdx;
+
     if(targetIdx !== curIdx){
       moveAthlete(curIdx, targetIdx);
       renderTable();
@@ -1342,6 +1619,49 @@
   document.getElementById("trainingModalCancel").onclick = function(){ trainingModal.classList.remove("show"); };
   trainingModal.onclick = function(e){ if(e.target === trainingModal) trainingModal.classList.remove("show"); };
 
+  /* ---------- themes ---------- */
+  var THEMES = [
+    { id:"light",    name:"Светлая",   colors:["#2563eb","#ffffff","#f3f5fa"] },
+    { id:"dark",     name:"Тёмная",    colors:["#3b82f6","#18212f","#0e1420"] },
+    { id:"sunset",   name:"Закат",     colors:["#ea580c","#ffffff","#fdf6f1"] },
+    { id:"forest",   name:"Лес",       colors:["#047857","#ffffff","#f2f8f3"] },
+    { id:"contrast", name:"Контраст",  colors:["#0033cc","#ffffff","#000000"] }
+  ];
+  var themeModal = document.getElementById("themeModal");
+
+  function applyTheme(){
+    document.documentElement.setAttribute("data-theme", state.theme || "light");
+    var meta = document.querySelector('meta[name="theme-color"]');
+    var accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+    if(meta && accent) meta.setAttribute("content", accent);
+  }
+
+  function renderThemeOptions(){
+    var wrap = document.getElementById("themeOptions");
+    wrap.innerHTML = "";
+    THEMES.forEach(function(t){
+      var btn = document.createElement("button");
+      btn.className = "theme-opt" + (state.theme === t.id ? " active" : "");
+      var sw = t.colors.map(function(c){ return "<i style='background:" + c + "'></i>"; }).join("");
+      btn.innerHTML = "<span class='tn'>" + t.name + "</span><span class='theme-swatch'>" + sw + "</span>";
+      btn.onclick = function(){
+        state.theme = t.id;
+        persist();
+        applyTheme();
+        renderThemeOptions();
+        toast("Тема: " + t.name);
+      };
+      wrap.appendChild(btn);
+    });
+  }
+
+  document.getElementById("btnShowTheme").onclick = function(){
+    renderThemeOptions();
+    themeModal.classList.add("show");
+  };
+  document.getElementById("themeCloseBtn").onclick = function(){ themeModal.classList.remove("show"); };
+  themeModal.onclick = function(e){ if(e.target === themeModal) themeModal.classList.remove("show"); };
+
   /* ---------- roster (кто тренируется сегодня, по группам) ---------- */
   var rosterModal = document.getElementById("rosterModal");
   var rosterList = document.getElementById("rosterList");
@@ -1434,7 +1754,7 @@
     modalOkHandler = onOk || function(){};
     modalCancelBtn.style.display = opts.hideCancel ? "none" : "";
     modalOkBtn.textContent = opts.okLabel || "Удалить";
-    modalOkBtn.style.background = opts.okStyle === "neutral" ? "var(--blue)" : "var(--red)";
+    modalOkBtn.style.background = opts.okStyle === "neutral" ? "var(--accent)" : "var(--red)";
     modalBackdrop.classList.add("show");
   }
   function showAlert(text){
@@ -2059,7 +2379,7 @@
       details.style.cssText = "width:100%;margin-top:10px;";
       details.open = !!pendingProtocol.ocr;
       var summary = document.createElement("summary");
-      summary.style.cssText = "cursor:pointer;font-size:13px;color:var(--blue);font-weight:600;";
+      summary.style.cssText = "cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;";
       summary.textContent = "Показать / проверить участников (" + g.athletes.length + ")";
       details.appendChild(summary);
 
@@ -2357,7 +2677,87 @@
     return section;
   }
 
+  /* ---------- training leaderboard (from the current training's own laps) ----
+     Two genuinely different rankings, shown side by side rather than behind a
+     sort toggle (a toggle just reshuffled identical columns, which told the
+     coach nothing new):
+       speed       — fastest single lap
+       consistency — worst lap minus best lap, smallest first. Needs >= 2
+                     finished laps, so single-lap athletes are listed greyed
+                     out instead of topping the chart with a spread of 0. */
+  function trainingLeaderboardRows(){
+    var rows = [];
+    state.athletes.forEach(function(a){
+      var durs = [];
+      a.attempts.forEach(function(att){
+        if(att.finish !== null) durs.push(att.finish - att.start);
+      });
+      if(!durs.length) return;
+      var best = Math.min.apply(null, durs);
+      var worst = Math.max.apply(null, durs);
+      var sum = durs.reduce(function(s,d){ return s+d; }, 0);
+      rows.push({
+        name: a.name,
+        laps: durs.length,
+        best: best,
+        worst: worst,
+        spread: worst - best,
+        avg: Math.round(sum / durs.length),
+        total: sum
+      });
+    });
+    return rows;
+  }
+
+  var LB_EMPTY = "<div class='empty in-block'><div class='big'>🏁</div><div>Пока нет завершённых заездов.</div></div>";
+
+  function buildRankList(rows, opts){
+    if(!rows.length) return LB_EMPTY;
+    var leader = rows[0][opts.key];
+    return rows.map(function(r, i){
+      var gap = r[opts.key] - leader;
+      return "<div class='lbl-row" + (i === 0 ? " top1" : "") + "'>" +
+        "<div class='lbl-rank'>" + (i === 0 ? "🥇" : (i+1)) + "</div>" +
+        "<div class='lbl-name'>" + escapeHtml(r.name) +
+          "<div class='lbl-sub'>" + opts.sub(r) + "</div></div>" +
+        "<div class='lbl-val'>" + fmtDur(r[opts.key]) +
+          "<div class='lbl-gap'>" + (i === 0 ? "лидер" : "+" + fmtDur(gap)) + "</div></div>" +
+        "</div>";
+    }).join("");
+  }
+
+  function renderTrainingLeaderboard(){
+    var all = trainingLeaderboardRows();
+    var timeBody = document.getElementById("trainLbTime");
+    var spreadBody = document.getElementById("trainLbSpread");
+
+    if(!all.length){
+      timeBody.innerHTML = LB_EMPTY;
+      spreadBody.innerHTML = LB_EMPTY;
+      return;
+    }
+
+    timeBody.innerHTML = buildRankList(
+      all.slice().sort(function(x,y){ return x.best - y.best; }),
+      { key:"best", sub: function(r){ return r.laps + (r.laps === 1 ? " заезд" : " заездов") + " · средний " + fmtDur(r.avg); } }
+    );
+
+    var consistent = all.filter(function(r){ return r.laps >= 2; }).sort(function(x,y){ return x.spread - y.spread; });
+    var solo = all.filter(function(r){ return r.laps < 2; });
+    var spreadHtml = consistent.length
+      ? buildRankList(consistent, { key:"spread", sub: function(r){ return "лучший " + fmtDur(r.best) + " · худший " + fmtDur(r.worst); } })
+      : "<div class='empty in-block'><div class='big'>🎯</div><div>Нужно минимум 2 заезда,<br>чтобы измерить стабильность.</div></div>";
+    spreadHtml += solo.map(function(r){
+      return "<div class='lbl-row muted'>" +
+        "<div class='lbl-rank'>—</div>" +
+        "<div class='lbl-name'>" + escapeHtml(r.name) + "<div class='lbl-sub'>нужно 2+ заезда</div></div>" +
+        "<div class='lbl-val'>—</div></div>";
+    }).join("");
+    spreadBody.innerHTML = spreadHtml;
+  }
+
   function renderLeaderboard(){
+    renderTrainingLeaderboard();
     var session = state.protocolSession;
     if(!session){
       lbEmpty.style.display = "block";
@@ -2391,6 +2791,7 @@
   }, 1000);
 
   /* ---------- init ---------- */
+  applyTheme();
   updateSessionLabel();
   renderTable();
   renderGroups();

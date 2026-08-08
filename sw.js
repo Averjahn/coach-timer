@@ -3,7 +3,7 @@
 // else (including the CDN-hosted PDF/OCR libraries used only by the optional
 // "Протокол" tab) is cached opportunistically the first time it's fetched
 // online, then served from cache on later offline visits.
-var CACHE_NAME = "coach-timer-v4";
+var CACHE_NAME = "coach-timer-v5";
 var APP_SHELL = [
   "./",
   "./index.html",
